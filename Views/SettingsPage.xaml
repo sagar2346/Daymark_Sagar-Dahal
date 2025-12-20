@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:DailyJournalApp.ViewModels"
+             x:Class="DailyJournalApp.Views.SettingsPage"
+             Title="{Binding Title}">
+    <Grid Padding="20">
+        <VerticalStackLayout Spacing="30">
+            <Label Text="App Settings" FontSize="26" FontAttributes="Bold" />
+
+            <Border StrokeShape="RoundRectangle 12" Padding="20">
+                <Grid ColumnDefinitions="*, Auto">
+                    <VerticalStackLayout Spacing="5" Grid.Column="0">
+                        <Label Text="Dark Mode" FontSize="18" FontAttributes="Bold" />
+                        <Label Text="Switch between light and dark visual themes." 
+                               TextColor="Gray" 
+                               FontSize="14" />
+                    </VerticalStackLayout>
+                    <Switch Grid.Column="1" 
+                            IsToggled="{Binding IsDarkMode}" 
+                            VerticalOptions="Center" />
+                </Grid>
+            </Border>
+
+            <Border StrokeShape="RoundRectangle 12" Padding="20">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Data Export" FontSize="18" FontAttributes="Bold" />
+                    <Label Text="Export your entire journal history to a professional PDF document." 
+                           TextColor="Gray" 
+                           FontSize="14" />
+                    <Button Text="Export to PDF" 
+                            Command="{Binding ExportDataCommand}" 
+                            IsEnabled="{Binding IsNotBusy}"
+                            Margin="0,10,0,0" />
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+    </Grid>
+</ContentPage>
