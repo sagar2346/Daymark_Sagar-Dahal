@@ -42,17 +42,15 @@ A high-performance, secure, and feature-rich cross-platform journaling applicati
 
 ## 🧪 Test Coverage confirmed
 The application is ready for the following test cases:
-- [x] Test 4.1: Toggle Dark/Light mode working or not.
-- [x] Test 4.2: Export function (PDF Generation) works correctly.
-- [x] Test 4.4: Login portal performance and verification.
-- [x] Test 4.5: User ability to change login credentials.
-- [x] Test 4.6: Markdown and Rich Text Rendering logic.
-- [x] Test 4.7: Mood Tracking (Primary and Secondary emotions).
-- [x] Test 4.8: Tagging System and metadata management.
-- [x] Test 4.9: Advanced Search & Filters (Text, Date, Mood, Tag).
-- [x] Test 4.10: Streak Tracking & "Daily Limit" enforcement.
-- [x] Test 4.11: Calendar Navigation for date-based loading.
-- [x] Test 4.12: Analytics & Insights generation.
-- [x] Test 4.13: Paginated Journal View for performance.
-
-
+- [x] : Toggle Dark/Light mode .
+- [x] : Export function (PDF Generation).
+- [x] : Login portal performance and verification.
+- [x] : User ability to change login credentials.
+- [x] : Markdown and Rich Text Rendering logic.
+- [x] : Mood Tracking (Primary and Secondary emotions).
+- [x] : Tagging System and metadata management.
+- [x] : Advanced Search & Filters (Text, Date, Mood, Tag).
+- [x] : Streak Tracking & "Daily Limit" enforcement.
+- [x] : Calendar Navigation for date-based loading.
+- [x] : Analytics & Insights generation.
+- [x] : Paginated Journal View for performance.
