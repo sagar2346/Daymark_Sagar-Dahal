@@ -6,121 +6,295 @@
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="DailyJournalApp.Views.JournalPage"
              Title="{Binding Title}"
-             x:DataType="vm:JournalViewModel">
+             x:DataType="vm:JournalViewModel"
+             x:Name="this">
 
-    <ContentPage.ToolbarItems>
-        <ToolbarItem Text="Delete" Command="{Binding DeleteCommand}" Order="Secondary" />
-    </ContentPage.ToolbarItems>
+    <ContentPage.Resources>
+        <Style TargetType="CollectionView">
+            <Setter Property="EmptyView">
+                <ContentView>
+                    <Label Text="No items" HorizontalOptions="Center" VerticalOptions="Center" TextColor="{StaticResource TextColorSecondary}"/>
+                </ContentView>
+            </Setter>
+        </Style>
+    </ContentPage.Resources>
 
-    <Grid RowDefinitions="Auto, Auto, *" Padding="30" RowSpacing="25">
-        
-        <!-- Top Bar: Date & Title -->
-        <VerticalStackLayout Grid.Row="0" Spacing="20">
-            <DatePicker Date="{Binding SelectedDate}" 
-                        Format="D"
-                        HorizontalOptions="Center"
-                        FontSize="18"
-                        FontAttributes="Bold">
-                <DatePicker.Behaviors>
-                    <toolkit:EventToCommandBehavior EventName="DateSelected" Command="{Binding DateChangedCommand}" />
-                </DatePicker.Behaviors>
-            </DatePicker>
-            
-            <Entry Placeholder="Journal Title" 
-                   Text="{Binding CurrentEntry.Title}"
-                   FontSize="22" 
-                   FontAttributes="Bold"
-                   PlaceholderColor="{StaticResource Neutral400}" />
-            
-            <HorizontalStackLayout Spacing="10" VerticalOptions="Center">
-                <Label Text="How are you feeling?" 
-                       FontSize="14" 
-                       FontAttributes="Bold"
-                       TextColor="{StaticResource Neutral600}" 
-                       VerticalOptions="Center"/>
-                <Button Text="Clear" 
-                        Command="{Binding ClearMoodCommand}"
-                        Style="{StaticResource ButtonOutlineStyle}"
-                        HeightRequest="30"
-                        Padding="10,0"
-                        FontSize="11"
-                        IsVisible="{Binding SelectedMood, Converter={StaticResource IsNotNullConverter}}"
-                        VerticalOptions="Center" />
-            </HorizontalStackLayout>
-            <CollectionView ItemsSource="{Binding Moods}" 
-                             SelectionMode="Single"
-                             SelectedItem="{Binding SelectedMood}"
-                             HeightRequest="70">
-                <CollectionView.ItemsLayout>
-                    <LinearItemsLayout Orientation="Horizontal" ItemSpacing="15" />
-                </CollectionView.ItemsLayout>
-                <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="model:Mood">
-                        <Border StrokeShape="RoundRectangle 30"
-                                Padding="15,8"
-                                StrokeThickness="0">
-                            <VisualStateManager.VisualStateGroups>
-                                <VisualStateGroup Name="CommonStates">
-                                    <VisualState Name="Normal">
-                                        <VisualState.Setters>
-                                            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Neutral100}, Dark={StaticResource Neutral800}}" />
-                                            <Setter TargetName="MoodName" Property="Label.TextColor" Value="{StaticResource Neutral600}" />
-                                        </VisualState.Setters>
-                                    </VisualState>
-                                    <VisualState Name="Selected">
-                                        <VisualState.Setters>
-                                            <Setter Property="BackgroundColor" Value="{StaticResource Primary}" />
-                                            <Setter TargetName="MoodName" Property="Label.TextColor" Value="{StaticResource White}" />
-                                        </VisualState.Setters>
-                                    </VisualState>
-                                </VisualStateGroup>
-                            </VisualStateManager.VisualStateGroups>
-                            <HorizontalStackLayout Spacing="8" VerticalOptions="Center">
-                                <Label Text="{Binding Emoji}" 
-                                       FontSize="28" 
-                                       VerticalOptions="Center" />
-                                <Label x:Name="MoodName" 
-                                       Text="{Binding Name}" 
-                                       VerticalOptions="Center" 
-                                       FontAttributes="Bold" />
-                            </HorizontalStackLayout>
-                        </Border>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
-        </VerticalStackLayout>
+    <Grid RowDefinitions="*, Auto" Background="{StaticResource PageBackgroundBrush}">
+        <ScrollView Grid.Row="0">
+            <VerticalStackLayout Spacing="25" Padding="25">
+                
+                <!-- Date & Title Section (Glass Card) -->
+                <Border Style="{StaticResource GlassCard}">
+                    <VerticalStackLayout Spacing="15">
+                        <DatePicker Date="{Binding SelectedDate}" 
+                                    Format="D"
+                                    FontSize="14"
+                                    TextColor="{StaticResource Primary}"
+                                    FontAttributes="Bold"
+                                    HorizontalOptions="Center">
+                             <DatePicker.Behaviors>
+                                <toolkit:EventToCommandBehavior EventName="DateSelected" Command="{Binding DateChangedCommand}" />
+                            </DatePicker.Behaviors>
+                        </DatePicker>
+                        
+                        <Entry Placeholder="Title your day..." 
+                               Text="{Binding CurrentEntry.Title}"
+                               FontSize="24" 
+                               FontAttributes="Bold"
+                               TextColor="{StaticResource TextColorPrimary}"
+                               PlaceholderColor="{StaticResource Neutral400}" 
+                               HorizontalTextAlignment="Center"
+                               BackgroundColor="Transparent"/>
+                    </VerticalStackLayout>
+                </Border>
 
-        <!-- Editor Area (Split) -->
-        <Grid Grid.Row="2" ColumnDefinitions="*, *" ColumnSpacing="25">
-            <!-- Edit -->
-            <Border Grid.Column="0" Padding="15">
-                <Editor Placeholder="Write your thoughts..." 
-                        Text="{Binding MarkdownText}"
-                        VerticalOptions="Fill"
-                        FontSize="16" />
-            </Border>
-            
-            <!-- Preview -->
-            <Border Grid.Column="1" Padding="20">
-                <ScrollView>
-                    <Label Text="{Binding HtmlPreview}" 
-                           TextType="Html" 
-                           VerticalOptions="Fill"
-                           FontSize="16" />
-                </ScrollView>
-            </Border>
-        </Grid>
+                <!-- Mood Selection Section -->
+                <VerticalStackLayout Spacing="10">
+                    <Grid ColumnDefinitions="*, Auto" VerticalOptions="Center">
+                        <Label Text="How are you feeling?" Style="{StaticResource SectionHeader}" Margin="0" VerticalOptions="Center"/>
+                        <Button Text="Reset" 
+                                Command="{Binding ClearMoodCommand}"
+                                Style="{StaticResource GhostButton}"
+                                HeightRequest="32"
+                                Padding="12,0"
+                                HorizontalOptions="End"
+                                VerticalOptions="Center"/>
+                    </Grid>
+                    
+                    <CollectionView ItemsSource="{Binding Moods}" 
+                                     SelectionMode="Single"
+                                     SelectedItem="{Binding SelectedMood}"
+                                     HeightRequest="85">
+                        <CollectionView.ItemsLayout>
+                            <LinearItemsLayout Orientation="Horizontal" ItemSpacing="15" />
+                        </CollectionView.ItemsLayout>
+                        <CollectionView.ItemTemplate>
+                            <DataTemplate x:DataType="model:Mood">
+                                <Border StrokeShape="RoundRectangle 20"
+                                        Padding="15,10"
+                                        StrokeThickness="1"
+                                        HeightRequest="80"
+                                        WidthRequest="70">
+                                    <VisualStateManager.VisualStateGroups>
+                                        <VisualStateGroup Name="CommonStates">
+                                            <VisualState Name="Normal">
+                                                <VisualState.Setters>
+                                                    <Setter Property="BackgroundColor" Value="{StaticResource SurfaceColor}" />
+                                                    <Setter Property="Stroke" Value="Transparent" />
+                                                </VisualState.Setters>
+                                            </VisualState>
+                                            <VisualState Name="Selected">
+                                                <VisualState.Setters>
+                                                    <Setter Property="BackgroundColor" Value="{StaticResource PrimaryTransparent}" />
+                                                    <Setter Property="Stroke" Value="{StaticResource Primary}" />
+                                                </VisualState.Setters>
+                                            </VisualState>
+                                        </VisualStateGroup>
+                                    </VisualStateManager.VisualStateGroups>
+                                    <VerticalStackLayout Spacing="5" VerticalOptions="Center" HorizontalOptions="Center">
+                                        <Label Text="{Binding Emoji}" FontSize="32" HorizontalOptions="Center" />
+                                        <Label Text="{Binding Name}" FontSize="10" HorizontalOptions="Center" TextColor="{StaticResource TextColorSecondary}"/>
+                                    </VerticalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </CollectionView.ItemTemplate>
+                    </CollectionView>
+                </VerticalStackLayout>
 
-        <!-- Save Button -->
-        <Button Grid.Row="1" 
-                Text="Save Reflection" 
-                Command="{Binding SaveCommand}"
-                FontAttributes="Bold"
-                FontSize="16"
-                HorizontalOptions="End"
-                WidthRequest="200"
-                IsVisible="{Binding UserIsAuthenticated}" />
-        
+                <!-- Secondary Mood Section -->
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Secondary Feelings (Optional)" Style="{StaticResource SectionHeader}" Margin="0"/>
 
+                    <!-- Selected Feelings Chips -->
+                    <FlexLayout Wrap="Wrap" AlignItems="Center" JustifyContent="Start" Direction="Row">
+                        <BindableLayout.ItemsSource>
+                            <Binding Path="SelectedSecondaryMoods" />
+                        </BindableLayout.ItemsSource>
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="x:String">
+                                <Border StrokeShape="RoundRectangle 50" 
+                                        BackgroundColor="{StaticResource Primary}" 
+                                        Padding="12,6"
+                                        StrokeThickness="0"
+                                        Margin="0,0,8,8">
+                                    <HorizontalStackLayout Spacing="6">
+                                        <Label Text="{Binding .}" TextColor="White" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
+                                        <Label Text="✕" TextColor="White" FontSize="10" VerticalOptions="Center" Opacity="0.7">
+                                            <Label.GestureRecognizers>
+                                                <TapGestureRecognizer Command="{Binding BindingContext.RemoveSecondaryFeelingCommand, Source={x:Reference this}}" 
+                                                                      CommandParameter="{Binding .}" />
+                                            </Label.GestureRecognizers>
+                                        </Label>
+                                    </HorizontalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </FlexLayout>
+
+                    <!-- Add Feeling Input -->
+                    <Border StrokeShape="RoundRectangle 12"
+                            Style="{StaticResource GlassCard}" 
+                            Padding="0"
+                            HorizontalOptions="Start"
+                            WidthRequest="250">
+                        <Grid ColumnDefinitions="*, Auto">
+                            <Entry Grid.Column="0"
+                                   Placeholder="Add a feeling..." 
+                                   Text="{Binding NewSecondaryFeeling}"
+                                   FontSize="13"
+                                   TextColor="{StaticResource TextColorPrimary}"
+                                   PlaceholderColor="{StaticResource Neutral400}"
+                                   BackgroundColor="Transparent"
+                                   HeightRequest="40"
+                                   Margin="12,0"
+                                   ReturnCommand="{Binding AddSecondaryFeelingCommand}"/>
+                            
+                            <Button Grid.Column="1"
+                                    Text="Add"
+                                    Command="{Binding AddSecondaryFeelingCommand}"
+                                    WidthRequest="50"
+                                    HeightRequest="40"
+                                    Padding="0"
+                                    CornerRadius="0"
+                                    BackgroundColor="{StaticResource Primary}"
+                                    TextColor="White"
+                                    FontSize="11"
+                                    FontAttributes="Bold"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- Suggestions -->
+                     <Label Text="Suggestions:" FontSize="10" TextColor="{StaticResource TextColorSecondary}" Margin="0,5,0,0"/>
+                     <ScrollView Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
+                        <HorizontalStackLayout BindableLayout.ItemsSource="{Binding MoodSuggestions}" Spacing="8">
+                             <BindableLayout.ItemTemplate>
+                                <DataTemplate x:DataType="model:Mood">
+                                     <Button Text="{Binding Name}" 
+                                             Command="{Binding BindingContext.AddSecondaryFeelingFromSuggestionCommand, Source={x:Reference this}}"
+                                             CommandParameter="{Binding .}"
+                                             Style="{StaticResource GhostButton}"
+                                             HeightRequest="30"
+                                             Padding="10,0"
+                                             FontSize="11"/>
+                                </DataTemplate>
+                             </BindableLayout.ItemTemplate>
+                        </HorizontalStackLayout>
+                    </ScrollView>
+                </VerticalStackLayout>
+
+                <!-- Tags Section -->
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Tags" Style="{StaticResource SectionHeader}" Margin="0"/>
+                    
+                    <!-- Selected Tags Chips -->
+                    <FlexLayout Wrap="Wrap" AlignItems="Center" JustifyContent="Start" Direction="Row">
+                        <BindableLayout.ItemsSource>
+                            <Binding Path="SelectedTags" />
+                        </BindableLayout.ItemsSource>
+                        <BindableLayout.ItemTemplate>
+                            <DataTemplate x:DataType="model:Tag">
+                                <Border StrokeShape="RoundRectangle 50" 
+                                        BackgroundColor="{Binding HexColor}" 
+                                        Padding="12,6"
+                                        StrokeThickness="0"
+                                        Margin="0,0,8,8">
+                                    <HorizontalStackLayout Spacing="6">
+                                        <Label Text="{Binding Name}" TextColor="White" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
+                                        <Label Text="✕" TextColor="White" FontSize="10" VerticalOptions="Center" Opacity="0.7">
+                                            <Label.GestureRecognizers>
+                                                <TapGestureRecognizer Command="{Binding BindingContext.RemoveTagCommand, Source={x:Reference this}}" 
+                                                                      CommandParameter="{Binding .}" />
+                                            </Label.GestureRecognizers>
+                                        </Label>
+                                    </HorizontalStackLayout>
+                                </Border>
+                            </DataTemplate>
+                        </BindableLayout.ItemTemplate>
+                    </FlexLayout>
+                    
+                    <!-- Add Tag Input -->
+                    <Border StrokeShape="RoundRectangle 12"
+                            Style="{StaticResource GlassCard}" 
+                            Padding="0"
+                            HorizontalOptions="Start"
+                            WidthRequest="250">
+                        <Grid ColumnDefinitions="*, Auto">
+                            <Entry Grid.Column="0"
+                                   Placeholder="Add a tag..." 
+                                   Text="{Binding NewTagName}"
+                                   FontSize="13"
+                                   TextColor="{StaticResource TextColorPrimary}"
+                                   PlaceholderColor="{StaticResource Neutral400}"
+                                   BackgroundColor="Transparent"
+                                   HeightRequest="40"
+                                   Margin="12,0"
+                                   ReturnCommand="{Binding AddTagCommand}"/>
+                            
+                            <Button Grid.Column="1"
+                                    Text="Add"
+                                    Command="{Binding AddTagCommand}"
+                                    WidthRequest="50"
+                                    HeightRequest="40"
+                                    Padding="0"
+                                    CornerRadius="0"
+                                    BackgroundColor="{StaticResource Primary}"
+                                    TextColor="White"
+                                    FontSize="11"
+                                    FontAttributes="Bold"/>
+                        </Grid>
+                    </Border>
+                </VerticalStackLayout>
+
+
+                <!-- Editor Section -->
+                <Label Text="Your Reflection" Style="{StaticResource SectionHeader}" Margin="0,10,0,0"/>
+                <Grid ColumnDefinitions="*, *" ColumnSpacing="15" HeightRequest="400">
+                    <!-- Editor -->
+                    <Border Style="{StaticResource GlassCard}" Grid.Column="0" Padding="15">
+                        <Editor Placeholder="Write your thoughts here..." 
+                                Text="{Binding MarkdownText}"
+                                VerticalOptions="Fill"
+                                BackgroundColor="Transparent"
+                                AutoSize="TextChanges"/>
+                    </Border>
+                    <!-- Preview -->
+                    <Border Style="{StaticResource GlassCard}" Grid.Column="1" Padding="15" BackgroundColor="{AppThemeBinding Light={StaticResource Neutral50}, Dark={StaticResource  Neutral900}}">
+                         <ScrollView>
+                            <Label Text="{Binding HtmlPreview}" 
+                                   TextType="Html" 
+                                   TextColor="{StaticResource TextColorPrimary}" />
+                        </ScrollView>
+                    </Border>
+                </Grid>
+
+            </VerticalStackLayout>
+        </ScrollView>
+
+        <!-- Bottom Action Bar (Glass Effect) -->
+        <Border Grid.Row="1" 
+                BackgroundColor="{StaticResource SurfaceColor}" 
+                StrokeThickness="0"
+                Padding="20,15"
+                Shadow="{AppThemeBinding Light={StaticResource Neutral200}, Dark={StaticResource Black}}">
+             <HorizontalStackLayout HorizontalOptions="Center" Spacing="20">
+                 <Button Text="Delete Entry" 
+                         Command="{Binding DeleteCommand}"
+                         Style="{StaticResource DangerButton}"
+                         WidthRequest="160"
+                         HeightRequest="44"
+                         Padding="0"/>
+                         
+                 <Button Text="Save Reflection" 
+                         Command="{Binding SaveCommand}"
+                         HorizontalOptions="Center"
+                         WidthRequest="200"
+                         HeightRequest="44"
+                         Padding="0">
+                    <Button.Shadow>
+                        <Shadow Brush="{StaticResource Primary}" Offset="0,4" Radius="10" Opacity="0.5"/>
+                    </Button.Shadow>
+                 </Button>
+             </HorizontalStackLayout>
+        </Border>
     </Grid>
 </ContentPage>
