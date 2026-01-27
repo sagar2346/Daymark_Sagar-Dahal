@@ -10,11 +10,16 @@ using SkiaSharp;
 
 namespace DailyJournalApp.ViewModels
 {
+    /// <summary>
+    /// ViewModel for the main Dashboard. 
+    /// Aggregates data from across the app into user-friendly stats and visual charts.
+    /// </summary>
     public partial class DashboardViewModel : BaseViewModel
     {
         private readonly JournalService _journalService;
         private readonly AuthService _authService;
 
+        // Statistics Properties
         [ObservableProperty]
         private int currentStreak;
 
@@ -27,6 +32,7 @@ namespace DailyJournalApp.ViewModels
         [ObservableProperty]
         private int totalEntries;
 
+        // Chart Data Properties (LiveCharts Integration)
         [ObservableProperty]
         private ObservableCollection<ISeries> weeklySeries = new();
 
@@ -39,6 +45,9 @@ namespace DailyJournalApp.ViewModels
         [ObservableProperty]
         private string topTag = string.Empty;
 
+        /// <summary>
+        /// List of tags and their usage counts for display in a summary table.
+        /// </summary>
         public ObservableCollection<TagCount> TagDistribution { get; } = new();
 
         public DashboardViewModel(JournalService journalService, AuthService authService)
@@ -48,6 +57,10 @@ namespace DailyJournalApp.ViewModels
             Title = "Dashboard";
         }
 
+        /// <summary>
+        /// Main data loader for the dashboard.
+        /// Recalculates all stats whenever the page is visited.
+        /// </summary>
         [RelayCommand]
         public async Task LoadDashboardAsync()
         {
@@ -55,8 +68,10 @@ namespace DailyJournalApp.ViewModels
             var entries = await _journalService.GetAllEntriesAsync();
             TotalEntries = entries.Count;
 
+            // Only perform complex math if there is data available
             if (entries.Any())
             {
+                // Find mood mode (most frequent)
                 MostFrequentMood = entries.GroupBy(e => e.PrimaryMood)
                                           .OrderByDescending(g => g.Count())
                                           .First().Key ?? "None";
@@ -67,6 +82,7 @@ namespace DailyJournalApp.ViewModels
             }
             else
             {
+                // Reset to default empty state
                 MostFrequentMood = "None";
                 TopTag = "None";
                 CurrentStreak = 0;
@@ -75,10 +91,13 @@ namespace DailyJournalApp.ViewModels
             }
         }
 
+        /// <summary>
+        /// Analyzes tag popularity by joining Tags and EntryTags data.
+        /// </summary>
         private async Task CalculateTagInsights()
         {
             var tags = await _journalService.GetTagsAsync();
-            var entryTags = await _journalService.GetAsync<EntryTag>(); // Generic fetch if available
+            var entryTags = await _journalService.GetAsync<EntryTag>();
 
             if (!entryTags.Any()) 
             {
@@ -87,6 +106,7 @@ namespace DailyJournalApp.ViewModels
                 return;
             }
 
+            // Aggregate counts using LINQ GroupBy
             var stats = entryTags.GroupBy(et => et.TagId)
                                  .Select(g => new TagCount 
                                  { 
@@ -102,6 +122,9 @@ namespace DailyJournalApp.ViewModels
             foreach (var s in stats.Take(5)) TagDistribution.Add(s);
         }
 
+        /// <summary>
+        /// Generates the data points for the 7-day bar chart on the UI.
+        /// </summary>
         private void CalculateWeeklyOverview(List<JournalEntry> entries)
         {
             var last7Days = Enumerable.Range(0, 7)
@@ -109,22 +132,25 @@ namespace DailyJournalApp.ViewModels
                 .OrderBy(d => d)
                 .ToList();
 
+            // Transform date list into frequency counts
             var counts = last7Days.Select(date => 
                 (double)entries.Count(e => e.EntryDate.Date == date.Date))
                 .ToArray();
 
+            // Configure the Bar Chart series
             WeeklySeries.Clear();
             WeeklySeries.Add(new ColumnSeries<double>
             {
                 Values = counts,
                 Stroke = null,
                 Padding = 2,
-                Fill = new SolidColorPaint(SKColor.Parse("#0D9488")), // Primary Teal
+                Fill = new SolidColorPaint(SKColor.Parse("#0D9488")), // Teal Primary
                 DataLabelsPaint = new SolidColorPaint(SKColor.Parse("#94A3B8")),
                 DataLabelsPosition = LiveChartsCore.Measure.DataLabelsPosition.Top,
                 MaxBarWidth = 35
             });
 
+            // Configure the X-Axis labels (Mon, Tue, etc.)
             XAxes.Clear();
             XAxes.Add(new Axis
             {
@@ -134,6 +160,10 @@ namespace DailyJournalApp.ViewModels
             });
         }
 
+        /// <summary>
+        /// Highly reactive streak algorithm.
+        /// Calculates how many consecutive days the user has written.
+        /// </summary>
         private void CalculateStreak(List<JournalEntry> entries)
         {
             var dates = entries.Select(e => e.EntryDate.Date).Distinct().OrderByDescending(d => d).ToList();
@@ -144,14 +174,14 @@ namespace DailyJournalApp.ViewModels
                 return;
             }
 
-            // Current Streak
+            // Logic for Current Active Streak
             int current = 0;
             DateTime checkDate = DateTime.Today;
+            
+            // A streak is active if the user wrote today OR yesterday
             if (dates.Contains(checkDate) || dates.Contains(checkDate.AddDays(-1)))
             {
-                // If they haven't written today but did yesterday, the streak is still alive until they miss today completely.
-                // However, usually streak = days up to yesterday if today is missing.
-                // Let's be strict: if today is missing, streak = days up to yesterday.
+                // Start checking from the most recent entry
                 if (!dates.Contains(checkDate)) checkDate = checkDate.AddDays(-1);
 
                 foreach (var date in dates)
@@ -159,19 +189,19 @@ namespace DailyJournalApp.ViewModels
                     if (date == checkDate)
                     {
                         current++;
-                        checkDate = checkDate.AddDays(-1);
+                        checkDate = checkDate.AddDays(-1); // Go back one day and repeat
                     }
-                    else if (date < checkDate) break;
+                    else if (date < checkDate) break; // Gap found, streak over
                 }
             }
             CurrentStreak = current;
 
-            // Longest Streak
+            // Logic for All-Time Longest Streak
             int max = 0;
             int temp = 0;
             DateTime? prev = null;
             
-            // Order ascending to find longest gap-less sequence
+            // Ascending order to find the longest sequence of adjacent days
             var ascendingDates = dates.OrderBy(d => d).ToList();
             foreach (var date in ascendingDates)
             {

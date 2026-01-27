@@ -7,10 +7,19 @@ using System.Collections.ObjectModel;
 
 namespace DailyJournalApp.ViewModels
 {
+    /// <summary>
+    /// ViewModel for the Journal Entry/Editing Page. 
+    /// Manages rich text (Markdown), mood selection, tagging, and persistence logic.
+    /// Implements IQueryAttributable for deep-linking (navigating to specific dates).
+    /// </summary>
     public partial class JournalViewModel : BaseViewModel, IQueryAttributable
     {
         private readonly JournalService _journalService;
+        
+        // Prevents UI race conditions during rapid data loading
         private readonly SemaphoreSlim _loadLock = new(1, 1);
+
+        // --- Observable Properties (UI Bound) ---
 
         [ObservableProperty]
         private DateTime selectedDate;
@@ -26,11 +35,6 @@ namespace DailyJournalApp.ViewModels
 
         [ObservableProperty]
         private Mood? selectedMood;
-        
-        public ObservableCollection<Mood> Moods { get; } = new();
-        // Changed to string to allow custom written feelings
-        public ObservableCollection<string> SelectedSecondaryMoods { get; } = new();
-        public ObservableCollection<Tag> SelectedTags { get; } = new();
 
         [ObservableProperty]
         private string newTagName = string.Empty;
@@ -38,20 +42,26 @@ namespace DailyJournalApp.ViewModels
         [ObservableProperty]
         private string newSecondaryFeeling = string.Empty;
 
-        // Keep presets as "Suggestions"
+        // --- Collections ---
+        
+        public ObservableCollection<Mood> Moods { get; } = new();
+        public ObservableCollection<string> SelectedSecondaryMoods { get; } = new();
+        public ObservableCollection<Tag> SelectedTags { get; } = new();
         public ObservableCollection<Mood> MoodSuggestions { get; } = new();
 
         public JournalViewModel(JournalService journalService)
         {
             _journalService = journalService;
             Title = "Journal";
+            
+            // Set default view to today
             SelectedDate = DateTime.Today;
-            // Initialize with an empty entry to avoid nulls before load
             CurrentEntry = new JournalEntry { EntryDate = DateTime.Today };
         }
 
         /// <summary>
-        /// Loads the journal entry for the selected date and populates moods.
+        /// Initial load method. Fetches all master-data (Moods) 
+        /// and then loads the entry for the current specific date.
         /// </summary>
         [RelayCommand]
         public async Task LoadAsync()
@@ -59,7 +69,6 @@ namespace DailyJournalApp.ViewModels
             IsBusy = true;
             try
             {
-                // Always reload Moods to reflect potential database updates
                 Moods.Clear();
                 MoodSuggestions.Clear();
                 
@@ -74,7 +83,7 @@ namespace DailyJournalApp.ViewModels
             }
             catch (Exception ex)
             {
-                await Shell.Current.DisplayAlert("Error", $"Failed to load entry: {ex.Message}", "OK");
+                await Shell.Current.DisplayAlert("Error", $"Failed to load data: {ex.Message}", "OK");
             }
             finally
             {
@@ -82,12 +91,18 @@ namespace DailyJournalApp.ViewModels
             }
         }
 
+        /// <summary>
+        /// Triggered when the user picks a different date from the Calendar/DatePicker.
+        /// </summary>
         [RelayCommand]
         public async Task DateChanged()
         {
              await LoadEntryArgs(SelectedDate);
         }
 
+        /// <summary>
+        /// Internal method to hydrate the UI with an entry's data (Content, Tags, Moods).
+        /// </summary>
         private async Task LoadEntryArgs(DateTime date)
         {
             await _loadLock.WaitAsync();
@@ -103,11 +118,11 @@ namespace DailyJournalApp.ViewModels
                     MarkdownText = entry.Content;
                     SelectedMood = Moods.FirstOrDefault(m => m.Name == entry.PrimaryMood);
                     
-                    // Load Tags
+                    // Load associated Tags
                     var tags = await _journalService.GetTagsForEntryAsync(entry.Id);
                     foreach (var t in tags) SelectedTags.Add(t);
 
-                    // Load Secondary Moods (Deduplicate)
+                    // Hydrate secondary moods from comma-separated string
                     if (!string.IsNullOrEmpty(entry.SecondaryMoods))
                     {
                         var names = entry.SecondaryMoods.Split(',', StringSplitOptions.RemoveEmptyEntries)
@@ -122,7 +137,7 @@ namespace DailyJournalApp.ViewModels
                 }
                 else
                 {
-                    // New blank entry
+                    // Case: No entry exists for this date. Initialize a blank slate.
                     CurrentEntry = new JournalEntry { EntryDate = date.Date };
                     MarkdownText = string.Empty;
                     SelectedMood = null;
@@ -136,7 +151,7 @@ namespace DailyJournalApp.ViewModels
         }
 
         /// <summary>
-        /// Saves the current journal entry to the database.
+        /// Validates and saves the current state to the local database.
         /// </summary>
         [RelayCommand]
         public async Task SaveAsync()
@@ -148,33 +163,36 @@ namespace DailyJournalApp.ViewModels
             {
                 if (CurrentEntry == null) return;
 
+                // Quality Check: Ensure "one entry per day" constraint is respected
                 if (CurrentEntry.Id == 0)
                 {
                     var existing = await _journalService.GetEntryByDateAsync(CurrentEntry.EntryDate);
                     if (existing != null)
                     {
                         MainThread.BeginInvokeOnMainThread(async () => {
-                            await Shell.Current.DisplayAlert("Journal Limit", "journal limit exceed(only one per day)", "OK");
+                            await Shell.Current.DisplayAlert("Journal Limit", "Only one entry allowed per day.", "OK");
                         });
                         return;
                     }
                 }
 
+                // Default title if left blank
                 if (string.IsNullOrWhiteSpace(CurrentEntry.Title))
                 {
-                    CurrentEntry.Title = "Untitled";
+                    CurrentEntry.Title = "Day Log: " + SelectedDate.ToShortDateString();
                 }
 
+                // Transfer local VM properties back to the model before saving
                 CurrentEntry.Content = MarkdownText;
                 CurrentEntry.PrimaryMood = SelectedMood?.Name;
                 
-                // Save Secondary Moods (Deduplicate)
+                // Aggregate secondary moods into a persistable string
                 var uniqueMoods = SelectedSecondaryMoods.Distinct().ToList();
                 CurrentEntry.SecondaryMoods = string.Join(",", uniqueMoods);
 
                 await _journalService.SaveEntryAsync(CurrentEntry);
 
-                // Ensure Id is synced for new entries
+                // Sync the ID if this was a new insertion
                 if (CurrentEntry.Id == 0)
                 {
                     var savedEntry = await _journalService.GetEntryByDateAsync(CurrentEntry.EntryDate);
@@ -184,11 +202,11 @@ namespace DailyJournalApp.ViewModels
                     }
                 }
 
-                await Shell.Current.DisplayAlert("Success", "Entry saved successfully.", "OK");
+                await Shell.Current.DisplayAlert("Saved", "Your journal entry has been captured.", "OK");
             }
             catch (Exception ex)
             {
-                await Shell.Current.DisplayAlert("Error", $"Failed to save: {ex.Message}", "OK");
+                await Shell.Current.DisplayAlert("Error", $"Save failed: {ex.Message}", "OK");
             }
             finally
             {
@@ -196,19 +214,25 @@ namespace DailyJournalApp.ViewModels
             }
         }
 
+        /// <summary>
+        /// Permanently removes the entry and its links from the database.
+        /// </summary>
         [RelayCommand]
         public async Task DeleteAsync()
         {
             if (CurrentEntry == null || CurrentEntry.Id == 0) return;
 
-            var confirm = await Shell.Current.DisplayAlert("Delete", "Are you sure you want to delete this entry?", "Yes", "No");
+            var confirm = await Shell.Current.DisplayAlert("Confirm Delete", "Are you absolutely sure?", "Delete", "Cancel");
             if (confirm)
             {
                 await _journalService.DeleteEntryAsync(CurrentEntry);
-                await LoadEntryArgs(SelectedDate); // Reload to clear
+                await LoadEntryArgs(SelectedDate); // Refresh the view
             }
         }
 
+        /// <summary>
+        /// Resets the current form to today's date and a blank state.
+        /// </summary>
         [RelayCommand]
         public async Task NewEntry()
         {
@@ -220,28 +244,31 @@ namespace DailyJournalApp.ViewModels
                 if (existing != null)
                 {
                     MainThread.BeginInvokeOnMainThread(async () => {
-                        await Shell.Current.DisplayAlert("Journal Limit", "journal limit exceed(only one per day)", "OK");
+                        await Shell.Current.DisplayAlert("Notice", "You already have an entry for today. Editing current log.", "OK");
                     });
+                    await LoadEntryArgs(SelectedDate);
                 }
-
-                // Open a new blank journal entry page (not the saved one)
-                CurrentEntry = new JournalEntry { EntryDate = SelectedDate };
-                MarkdownText = string.Empty;
-                SelectedMood = null;
-                SelectedSecondaryMoods.Clear();
-                SelectedTags.Clear();
-                UpdatePreview();
+                else
+                {
+                    CurrentEntry = new JournalEntry { EntryDate = SelectedDate };
+                    MarkdownText = string.Empty;
+                    SelectedMood = null;
+                    SelectedSecondaryMoods.Clear();
+                    SelectedTags.Clear();
+                    UpdatePreview();
+                }
             }
             catch (Exception ex)
             {
-                await Shell.Current.DisplayAlert("Error", $"Failed to prepare new entry: {ex.Message}", "OK");
+                await Shell.Current.DisplayAlert("Error", ex.Message, "OK");
             }
         }
 
-        // Helper to update preview when MarkdownText changes
+        // --- Event Handlers & Helper Methods ---
+
         partial void OnMarkdownTextChanged(string value)
         {
-            UpdatePreview();
+            UpdatePreview(); // Reactive update for the rich-text preview
         }
 
         [RelayCommand]
@@ -283,7 +310,7 @@ namespace DailyJournalApp.ViewModels
             }
         }
 
-        // Premium Palette for Tags
+        // Standard palette for colorful UI tags
         private readonly List<string> _premiumColors = new() 
         { 
             "#6366F1", "#8B5CF6", "#EC4899", "#F43F5E", "#EF4444", 
@@ -291,7 +318,7 @@ namespace DailyJournalApp.ViewModels
         };
 
         /// <summary>
-        /// Adds a new tag to the current journal entry with validation and logic for existing entries.
+        /// Adds a custom tag to the entry. Ensures case-insensitive uniqueness.
         /// </summary>
         [RelayCommand]
         public async Task AddTag()
@@ -300,34 +327,33 @@ namespace DailyJournalApp.ViewModels
 
             var tagText = NewTagName.Trim();
             
-            // Quality Check: Prevent duplicate tags (Case insensitive)
+            // Uniqueness Check
             if (SelectedTags.Any(t => t.Name.Equals(tagText, StringComparison.OrdinalIgnoreCase)))
             {
-                await Shell.Current.DisplayAlert("Duplicate Tag", $"The tag '{tagText}' already exists for this entry.", "OK");
+                await Shell.Current.DisplayAlert("Duplicate", "This tag is already added.", "OK");
                 NewTagName = string.Empty;
                 return;
             }
 
-            // Quality Check: Prevent excessively long tags
+            // Length Validation
             if (tagText.Length > 20)
             {
-                await Shell.Current.DisplayAlert("Invalid Tag", "Tags must be 20 characters or less.", "OK");
+                await Shell.Current.DisplayAlert("Limit Reached", "Tags must be short (max 20 chars).", "OK");
                 return;
             }
 
-            // For existing entries, persist immediately. For new, we'll save together.
+            // To link a tag, the entry must exist in the DB first
             if (CurrentEntry.Id == 0)
             {
-                // We need an ID to link tags, so save the entry first
                 await SaveAsync();
             }
 
             if (CurrentEntry.Id > 0)
             {
-                 // Assign a random premium color
                 var randomColor = _premiumColors[new Random().Next(_premiumColors.Count)];
-
                 await _journalService.AddTagToEntryAsync(CurrentEntry.Id, tagText, randomColor);
+                
+                // Refresh tag list from DB
                 var updatedTags = await _journalService.GetTagsForEntryAsync(CurrentEntry.Id);
                 SelectedTags.Clear();
                 foreach (var t in updatedTags) SelectedTags.Add(t);
@@ -345,6 +371,9 @@ namespace DailyJournalApp.ViewModels
             SelectedTags.Remove(tag);
         }
 
+        /// <summary>
+        /// Uses the Markdig library to convert Markdown text into raw HTML for display in a WebView.
+        /// </summary>
         private void UpdatePreview()
         {
             try 
@@ -358,18 +387,20 @@ namespace DailyJournalApp.ViewModels
                 var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
                 var result = Markdown.ToHtml(MarkdownText, pipeline);
                 
-                // Ensure the output is updated on the main thread
+                // Marshall UI update back to main thread
                 MainThread.BeginInvokeOnMainThread(() => {
                     HtmlPreview = result;
                 });
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Markdown conversion error: {ex.Message}");
-                HtmlPreview = $"<p style='color:red;'>Error rendering preview: {ex.Message}</p>";
+                System.Diagnostics.Debug.WriteLine($"Markdown Error: {ex.Message}");
             }
         }
 
+        /// <summary>
+        /// Handles incoming shell navigation parameters (e.g. from the Timeline page).
+        /// </summary>
         public async void ApplyQueryAttributes(IDictionary<string, object> query)
         {
             if (query.ContainsKey("date") && query["date"] is string dateStr)

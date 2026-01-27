@@ -6,10 +6,18 @@ using DailyJournalApp.Services;
 
 namespace DailyJournalApp.ViewModels
 {
+    /// <summary>
+    /// ViewModel for the Timeline Page. 
+    /// Manages a searchable, filterable, and paginated list of all historical journal entries.
+    /// </summary>
     public partial class TimelineViewModel : BaseViewModel
     {
         private readonly JournalService _journalService;
+        
+        // Comprehensive local mirror of current page entries for filtering
         private List<JournalEntry> _allEntries = new();
+
+        // --- Search and Filter State ---
 
         [ObservableProperty]
         private string searchText = string.Empty;
@@ -24,12 +32,20 @@ namespace DailyJournalApp.ViewModels
         private Mood? selectedMoodFilter;
 
         [ObservableProperty]
+        private Tag? selectedTagFilter;
+
+        [ObservableProperty]
         private JournalEntry? selectedEntry;
+
+        // --- Pagination State ---
 
         [ObservableProperty]
         [NotifyPropertyChangedFor(nameof(DisplayPageNumber))]
         private int currentPage = 0;
 
+        /// <summary>
+        /// Human-readable page number (1-based index).
+        /// </summary>
         public int DisplayPageNumber => CurrentPage + 1;
 
         [ObservableProperty]
@@ -47,76 +63,73 @@ namespace DailyJournalApp.ViewModels
         [ObservableProperty]
         private bool canGoPrevious;
 
+        // --- Collections ---
         public ObservableCollection<JournalEntry> Entries { get; } = new();
         public ObservableCollection<Mood> AvailableMoods { get; } = new();
+        public ObservableCollection<Tag> AvailableTags { get; } = new();
 
         public TimelineViewModel(JournalService journalService)
         {
             _journalService = journalService;
             Title = "Timeline";
+            
+            // Initializing will load the first batch of data
             Initialize();
         }
 
         /// <summary>
-        /// Initializes the timeline by loading moods, tags, and the first page of entries.
+        /// Entry point for the timeline view. 
+        /// Ensures all metadata is ready before loading the paginated dataset.
         /// </summary>
         [RelayCommand]
         public async Task Initialize()
         {
             IsBusy = true;
-            // The rest of the initialization logic (e.g., loading entries)
-            // will likely be moved here or called from here.
-            // For now, we'll just set IsBusy and let LoadEntriesAsync handle the actual loading.
-            // This method is likely intended to be called from the View's OnAppearing or similar.
             await LoadEntriesAsync();
             IsBusy = false;
         }
 
+        // --- Reactive Property Triggers (Auto-filter on change) ---
         partial void OnSearchTextChanged(string value) => FilterEntries();
         partial void OnStartDateChanged(DateTime? value) => FilterEntries();
         partial void OnEndDateChanged(DateTime? value) => FilterEntries();
-        [ObservableProperty]
-        private Tag? selectedTagFilter;
-
-        public ObservableCollection<Tag> AvailableTags { get; } = new();
-
         partial void OnSelectedTagFilterChanged(Tag? value) => FilterEntries();
 
         /// <summary>
-        /// Filters the loaded entries based on search text, date range, mood, and tags.
+        /// Core filtering engine. 
+        /// Processes the current page of entries against multiple UI filter parameters.
         /// </summary>
         private void FilterEntries()
         {
             try
             {
-                // When filtering, we work with all entries locally as the dataset is presumed to be manageable for filtering once loaded.
-                // However, the initial load is now paginated for performance.
                 var filtered = _allEntries.AsEnumerable();
 
-                // Search Text
+                // 1. Text Search (Matches Title or Body Content)
                 if (!string.IsNullOrWhiteSpace(SearchText))
                 {
                     filtered = filtered.Where(e => (e.Title?.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ?? false) || 
                                                   (e.Content?.Contains(SearchText, StringComparison.OrdinalIgnoreCase) ?? false));
                 }
 
-                // Date Range
+                // 2. Temporal Filters
                 if (StartDate.HasValue)
                     filtered = filtered.Where(e => e.EntryDate.Date >= StartDate.Value.Date);
                 
                 if (EndDate.HasValue)
                     filtered = filtered.Where(e => e.EntryDate.Date <= EndDate.Value.Date);
 
-                // Mood
+                // 3. Mood Categorization Filter
                 if (SelectedMoodFilter != null)
                     filtered = filtered.Where(e => e.PrimaryMood == SelectedMoodFilter.Name);
 
-                // Tag [New]
+                // 4. Tag Association Filter
                 if (SelectedTagFilter != null)
                 {
                     filtered = filtered.Where(e => e.Tags.Any(t => t.Id == SelectedTagFilter.Id));
                 }
 
+                // Hydrate the UI collection
                 Entries.Clear();
                 foreach (var entry in filtered.ToList())
                 {
@@ -130,7 +143,8 @@ namespace DailyJournalApp.ViewModels
         }
 
         /// <summary>
-        /// Loads entries from the database with pagination support.
+        /// Fetches a specific window of data from the database.
+        /// Performs automatic 'hydration' by mapping raw data to UI-friendly emojis and colors.
         /// </summary>
         [RelayCommand]
         public async Task LoadEntriesAsync()
@@ -139,6 +153,7 @@ namespace DailyJournalApp.ViewModels
             {
                 IsBusy = true;
                 
+                // Fetch Global Metadata
                 var allMoods = await _journalService.GetMoodsAsync();
                 if (!AvailableMoods.Any())
                 {
@@ -149,19 +164,22 @@ namespace DailyJournalApp.ViewModels
                 AvailableTags.Clear();
                 foreach (var t in allTags) AvailableTags.Add(t);
 
-                // Pagination logic
+                // Calculate Pagination Bounds
                 TotalCount = await _journalService.GetTotalEntriesCountAsync();
                 TotalPages = (int)Math.Ceiling((double)TotalCount / PageSize);
                 
                 CanGoPrevious = CurrentPage > 0;
                 CanGoNext = CurrentPage < TotalPages - 1;
 
+                // Load Data Segment
                 _allEntries = await _journalService.GetEntriesPaginatedAsync(CurrentPage, PageSize);
                 
+                // Data Hydration: Link tags and mood metadata for visual display
                 var entryTags = await _journalService.GetAllEntryTagsAsync();
 
                 foreach (var entry in _allEntries)
                 {
+                    // Map Mood Properties
                     var moodData = allMoods.FirstOrDefault(m => m.Name == entry.PrimaryMood);
                     if (moodData != null)
                     {
@@ -169,12 +187,13 @@ namespace DailyJournalApp.ViewModels
                         entry.MoodCategory = moodData.Category;
                         entry.MoodColor = moodData.Category switch
                         {
-                            "Positive" => "#22C55E",
-                            "Negative" => "#EF4444",
-                            _ => "#10B981" // Success/Green instead of Blue
+                            "Positive" => "#22C55E", // Emerald Green
+                            "Negative" => "#EF4444", // Rose Red
+                            _ => "#10B981"          // Default Teal
                         };
                     }
 
+                    // Map Tag Properties for the 'Tags' chip display
                     var linkedTagIds = entryTags.Where(et => et.EntryId == entry.Id).Select(et => et.TagId).ToList();
                     entry.Tags = allTags.Where(t => linkedTagIds.Contains(t.Id)).ToList();
                 }
@@ -183,7 +202,7 @@ namespace DailyJournalApp.ViewModels
             }
             catch (Exception ex)
             {
-                await Shell.Current.DisplayAlert("Error", $"Failed to load timeline: {ex.Message}", "OK");
+                await Shell.Current.DisplayAlert("Load Error", ex.Message, "OK");
             }
             finally
             {
@@ -191,9 +210,8 @@ namespace DailyJournalApp.ViewModels
             }
         }
 
-        /// <summary>
-        /// Navigates to the next page of entries.
-        /// </summary>
+        // --- Navigation Commands ---
+
         [RelayCommand]
         public async Task NextPageAsync()
         {
@@ -204,9 +222,6 @@ namespace DailyJournalApp.ViewModels
             }
         }
 
-        /// <summary>
-        /// Navigates to the previous page of entries.
-        /// </summary>
         [RelayCommand]
         public async Task PreviousPageAsync()
         {
@@ -233,7 +248,7 @@ namespace DailyJournalApp.ViewModels
         {
             if (entry == null) return;
 
-            bool confirm = await Shell.Current.DisplayAlert("Delete", "Are you sure you want to delete this entry?", "Yes", "No");
+            bool confirm = await Shell.Current.DisplayAlert("Action Required", "Delete this journal entry permanently?", "Delete", "Cancel");
             if (confirm)
             {
                 await _journalService.DeleteEntryAsync(entry);
@@ -241,6 +256,9 @@ namespace DailyJournalApp.ViewModels
             }
         }
 
+        /// <summary>
+        /// Navigates to the Journal editing page for a specific entry.
+        /// </summary>
         [RelayCommand]
         public async Task ViewEntry()
         {
@@ -249,10 +267,12 @@ namespace DailyJournalApp.ViewModels
             var dateStr = SelectedEntry.EntryDate.ToString("yyyy-MM-dd");
             await Shell.Current.GoToAsync($"//JournalPage?date={dateStr}");
             
-            // Clear selection
-            SelectedEntry = null;
+            SelectedEntry = null; // Clear selection
         }
 
+        /// <summary>
+        /// Global shortcut to start a new entry for today.
+        /// </summary>
         [RelayCommand]
         public async Task GoToNewEntry()
         {
