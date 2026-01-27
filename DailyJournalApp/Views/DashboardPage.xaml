@@ -3,99 +3,117 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:DailyJournalApp.ViewModels"
              xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.Maui;assembly=LiveChartsCore.SkiaSharpView.Maui"
+             xmlns:model="clr-namespace:DailyJournalApp.Models"
              x:Class="DailyJournalApp.Views.DashboardPage"
              Title="{Binding Title}"
              x:Name="this"
              x:DataType="vm:DashboardViewModel">
-    <ScrollView>
+    <ScrollView Background="{StaticResource DeepSpace}">
         <VerticalStackLayout Spacing="30" Padding="30">
             <!-- Header Section -->
             <VerticalStackLayout Spacing="5">
-                <Grid ColumnDefinitions="*, Auto">
-                    <VerticalStackLayout Spacing="5">
-                        <Label Text="{Binding UserName, StringFormat='Welcome, {0}'}" Style="{StaticResource Headline}" />
-                        <Label Text="Ready for today's reflection?" Style="{StaticResource SubHeadline}" />
-                    </VerticalStackLayout>
-                </Grid>
-
-
+                <Label Text="{Binding UserName, StringFormat='Welcome, {0}'}" 
+                       FontSize="32" 
+                       FontAttributes="Bold"
+                       TextColor="White" />
+                <Label Text="Ready for today's reflection?" 
+                       FontSize="16" 
+                       TextColor="{StaticResource Neutral400}" />
             </VerticalStackLayout>
-            
-            <Grid ColumnDefinitions="*, *" RowDefinitions="Auto, Auto" ColumnSpacing="20" RowSpacing="20">
-                <!-- Streak Card -->
-                <Border Grid.Row="0" Grid.Column="0" Padding="25" BackgroundColor="{StaticResource Primary}">
-                    <Border.StrokeShape>
-                        <RoundRectangle CornerRadius="20"/>
-                    </Border.StrokeShape>
-                    <VerticalStackLayout Spacing="0" HorizontalOptions="Center">
+
+            <!-- Stats Grid -->
+            <Grid ColumnDefinitions="*, *" ColumnSpacing="20">
+                <!-- Current Streak Card (Teal) -->
+                <Border Grid.Column="0" 
+                        BackgroundColor="#0D9488"
+                        StrokeThickness="0"
+                        StrokeShape="RoundRectangle 16"
+                        Padding="25">
+                    <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="5">
                         <Label Text="CURRENT STREAK" 
-                               TextColor="{StaticResource White}" 
-                               FontSize="11" 
+                               FontSize="10" 
                                FontAttributes="Bold" 
-                               CharacterSpacing="1"
-                               HorizontalOptions="Center" 
-                               Opacity="0.8"/>
+                               TextColor="White" 
+                               Opacity="0.8"
+                               HorizontalOptions="Center"/>
                         <Label Text="{Binding CurrentStreak}" 
-                               TextColor="{StaticResource White}" 
                                FontSize="48" 
                                FontAttributes="Bold" 
-                               HorizontalOptions="Center" />
+                               TextColor="White"
+                               HorizontalOptions="Center"/>
                         <Label Text="DAYS" 
-                               TextColor="{StaticResource White}" 
-                               FontSize="12" 
-                               HorizontalOptions="Center" 
-                               Opacity="0.8"/>
+                               FontSize="10" 
+                               TextColor="White" 
+                               Opacity="0.8"
+                               HorizontalOptions="Center"/>
                     </VerticalStackLayout>
                 </Border>
 
-                <!-- Total Entries Card -->
-                <Border Grid.Row="0" Grid.Column="1" Padding="25">
-                    <VerticalStackLayout Spacing="0" HorizontalOptions="Center">
+                <!-- Total Entries Card (Dark Glass) -->
+                <Border Grid.Column="1" 
+                        BackgroundColor="#1E293B"
+                        StrokeThickness="1"
+                        Stroke="#334155"
+                        StrokeShape="RoundRectangle 16"
+                        Padding="25">
+                    <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center" Spacing="5">
                         <Label Text="TOTAL ENTRIES" 
-                               TextColor="{StaticResource Neutral500}" 
-                               FontSize="11" 
+                               FontSize="10" 
                                FontAttributes="Bold" 
-                               CharacterSpacing="1"
-                               HorizontalOptions="Center" />
+                               TextColor="{StaticResource Neutral400}" 
+                               HorizontalOptions="Center"/>
                         <Label Text="{Binding TotalEntries}" 
-                               Style="{StaticResource Headline}"
-                               FontSize="48"
-                               HorizontalOptions="Center" />
+                               FontSize="48" 
+                               FontAttributes="Bold" 
+                               TextColor="White"
+                               HorizontalOptions="Center"/>
                         <Label Text="RECORDS" 
-                               TextColor="{StaticResource Neutral500}" 
-                               FontSize="12" 
-                               HorizontalOptions="Center" />
+                               FontSize="10" 
+                               TextColor="{StaticResource Neutral400}" 
+                               HorizontalOptions="Center"/>
                     </VerticalStackLayout>
-                </Border>
-
-                <!-- Mood Analytics Card -->
-                <Border Grid.Row="1" Grid.ColumnSpan="2" Padding="25">
-                    <Grid ColumnDefinitions="Auto, *" ColumnSpacing="25">
-                        <VerticalStackLayout Grid.Column="0" Spacing="5" VerticalOptions="Center">
-                            <Label Text="DOMINANT MOOD" 
-                                   TextColor="{StaticResource Neutral500}" 
-                                   FontSize="11" 
-                                   FontAttributes="Bold" 
-                                   CharacterSpacing="1"/>
-                            <Label Text="{Binding MostFrequentMood}" 
-                                   TextColor="{StaticResource Secondary}" 
-                                   FontSize="28" 
-                                   FontAttributes="Bold" />
-                        </VerticalStackLayout>
-                        
-                        <BoxView Grid.Column="1" HeightRequest="1" Color="{StaticResource Neutral200}" VerticalOptions="Center" Margin="0,0,20,0"/>
-                    </Grid>
                 </Border>
             </Grid>
 
-            <VerticalStackLayout Spacing="15">
-                <Label Text="Weekly Activity" Style="{StaticResource SubHeadline}" />
-                <Border HeightRequest="300" Padding="20">
+            <!-- Dominant Mood Card -->
+            <Border BackgroundColor="#1E293B"
+                    StrokeThickness="1"
+                    Stroke="#334155"
+                    StrokeShape="RoundRectangle 16"
+                    Padding="25">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="DOMINANT MOOD" 
+                           FontSize="10" 
+                           FontAttributes="Bold" 
+                           TextColor="{StaticResource Neutral400}" />
+                    <Label Text="{Binding MostFrequentMood}" 
+                           FontSize="28" 
+                           FontAttributes="Bold" 
+                           TextColor="#818CF8" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Weekly Activity Section -->
+            <VerticalStackLayout Spacing="20">
+                <Label Text="Weekly Activity" 
+                       FontSize="20" 
+                       FontAttributes="Bold" 
+                       TextColor="White" />
+                
+                <Border BackgroundColor="#0F172A"
+                        StrokeThickness="1"
+                        Stroke="#1E293B"
+                        StrokeShape="RoundRectangle 16"
+                        Padding="20"
+                        HeightRequest="350">
                     <lvc:CartesianChart Series="{Binding WeeklySeries}" 
                                        XAxes="{Binding XAxes}"
                                        VerticalOptions="Fill" />
                 </Border>
             </VerticalStackLayout>
+
+            <!-- Bottom Spacer -->
+            <BoxView HeightRequest="50" Color="Transparent"/>
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

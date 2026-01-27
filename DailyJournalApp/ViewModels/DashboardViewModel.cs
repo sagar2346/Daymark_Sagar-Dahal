@@ -13,12 +13,16 @@ namespace DailyJournalApp.ViewModels
     public partial class DashboardViewModel : BaseViewModel
     {
         private readonly JournalService _journalService;
+        private readonly AuthService _authService;
 
         [ObservableProperty]
         private int currentStreak;
 
         [ObservableProperty]
-        private string mostFrequentMood;
+        private int longestStreak;
+
+        [ObservableProperty]
+        private string mostFrequentMood = string.Empty;
 
         [ObservableProperty]
         private int totalEntries;
@@ -30,22 +34,24 @@ namespace DailyJournalApp.ViewModels
         private ObservableCollection<Axis> xAxes = new();
 
         [ObservableProperty]
-        private string userName;
+        private string userName = string.Empty;
 
-        private readonly SecurityService _securityService;
+        [ObservableProperty]
+        private string topTag = string.Empty;
 
-        public DashboardViewModel(JournalService journalService, SecurityService securityService)
+        public ObservableCollection<TagCount> TagDistribution { get; } = new();
+
+        public DashboardViewModel(JournalService journalService, AuthService authService)
         {
             _journalService = journalService;
-            _securityService = securityService;
+            _authService = authService;
             Title = "Dashboard";
-            UserIsAuthenticated = _securityService.IsAuthenticated;
         }
 
         [RelayCommand]
         public async Task LoadDashboardAsync()
         {
-            UserName = Preferences.Default.Get("CurrentUser", "User");
+            UserName = _authService.GetCurrentUserName();
             var entries = await _journalService.GetAllEntriesAsync();
             TotalEntries = entries.Count;
 
@@ -57,13 +63,43 @@ namespace DailyJournalApp.ViewModels
                 
                 CalculateStreak(entries);
                 CalculateWeeklyOverview(entries);
+                await CalculateTagInsights();
             }
             else
             {
                 MostFrequentMood = "None";
+                TopTag = "None";
                 CurrentStreak = 0;
                 WeeklySeries.Clear();
+                TagDistribution.Clear();
             }
+        }
+
+        private async Task CalculateTagInsights()
+        {
+            var tags = await _journalService.GetTagsAsync();
+            var entryTags = await _journalService.GetAsync<EntryTag>(); // Generic fetch if available
+
+            if (!entryTags.Any()) 
+            {
+                TopTag = "None";
+                TagDistribution.Clear();
+                return;
+            }
+
+            var stats = entryTags.GroupBy(et => et.TagId)
+                                 .Select(g => new TagCount 
+                                 { 
+                                     TagName = tags.FirstOrDefault(t => t.Id == g.Key)?.Name ?? "Unknown", 
+                                     Count = g.Count() 
+                                 })
+                                 .OrderByDescending(x => x.Count)
+                                 .ToList();
+
+            TopTag = stats.FirstOrDefault()?.TagName ?? "None";
+            
+            TagDistribution.Clear();
+            foreach (var s in stats.Take(5)) TagDistribution.Add(s);
         }
 
         private void CalculateWeeklyOverview(List<JournalEntry> entries)
@@ -101,25 +137,56 @@ namespace DailyJournalApp.ViewModels
         private void CalculateStreak(List<JournalEntry> entries)
         {
             var dates = entries.Select(e => e.EntryDate.Date).Distinct().OrderByDescending(d => d).ToList();
-            int streak = 0;
-            DateTime current = DateTime.Today;
-
-            if (dates.Contains(current))
+            if (!dates.Any())
             {
+                CurrentStreak = 0;
+                LongestStreak = 0;
+                return;
+            }
+
+            // Current Streak
+            int current = 0;
+            DateTime checkDate = DateTime.Today;
+            if (dates.Contains(checkDate) || dates.Contains(checkDate.AddDays(-1)))
+            {
+                // If they haven't written today but did yesterday, the streak is still alive until they miss today completely.
+                // However, usually streak = days up to yesterday if today is missing.
+                // Let's be strict: if today is missing, streak = days up to yesterday.
+                if (!dates.Contains(checkDate)) checkDate = checkDate.AddDays(-1);
+
                 foreach (var date in dates)
                 {
-                    if (date == current)
+                    if (date == checkDate)
                     {
-                        streak++;
-                        current = current.AddDays(-1);
+                        current++;
+                        checkDate = checkDate.AddDays(-1);
                     }
-                    else if (date < current)
-                    {
-                        break;
-                    }
+                    else if (date < checkDate) break;
                 }
             }
-            CurrentStreak = streak;
+            CurrentStreak = current;
+
+            // Longest Streak
+            int max = 0;
+            int temp = 0;
+            DateTime? prev = null;
+            
+            // Order ascending to find longest gap-less sequence
+            var ascendingDates = dates.OrderBy(d => d).ToList();
+            foreach (var date in ascendingDates)
+            {
+                if (prev == null || date == prev.Value.AddDays(1))
+                {
+                    temp++;
+                }
+                else
+                {
+                    max = Math.Max(max, temp);
+                    temp = 1;
+                }
+                prev = date;
+            }
+            LongestStreak = Math.Max(max, temp);
         }
     }
 }
