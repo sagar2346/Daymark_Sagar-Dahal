@@ -23,16 +23,31 @@ namespace DailyJournalApp.Services
                 if (_database is not null)
                     return;
 
-                _database = new SQLiteAsyncConnection(Constants.DatabasePath, Constants.Flags);
-            
-            // Create tables
-            await _database.CreateTableAsync<User>();
-            await _database.CreateTableAsync<JournalEntry>();
-            await _database.CreateTableAsync<Mood>();
-            await _database.CreateTableAsync<Tag>();
-            await _database.CreateTableAsync<EntryTag>();
+                var dbPath = Constants.DatabasePath;
+                _database = new SQLiteAsyncConnection(dbPath, Constants.Flags);
+                
+                // Ensure the directory exists
+                var dbDir = Path.GetDirectoryName(dbPath);
+                if (!string.IsNullOrEmpty(dbDir) && !Directory.Exists(dbDir))
+                {
+                    Directory.CreateDirectory(dbDir);
+                }
 
-            await SeedDataAsync();
+                // Create tables
+                await _database.CreateTableAsync<User>();
+                await _database.CreateTableAsync<JournalEntry>();
+                await _database.CreateTableAsync<Mood>();
+                await _database.CreateTableAsync<Tag>();
+                await _database.CreateTableAsync<EntryTag>();
+
+                // Run seeding in background to avoid blocking initial UI if it's heavy
+                _ = Task.Run(async () => {
+                    try {
+                        await SeedDataAsync();
+                    } catch (Exception ex) {
+                        System.Diagnostics.Debug.WriteLine($"Seed error: {ex.Message}");
+                    }
+                });
             }
             finally
             {
