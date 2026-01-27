@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:DailyJournalApp.ViewModels"
+             x:Class="DailyJournalApp.Views.HomePage"
+             Title="{Binding Title}"
+             Shell.FlyoutBehavior="Disabled">
+    
+    <Grid RowDefinitions="*, Auto" Padding="30">
+        <VerticalStackLayout Spacing="30" VerticalOptions="Center">
+            <!-- App Logo/Icon would go here -->
+            <Border WidthRequest="100" HeightRequest="100" 
+                    StrokeThickness="0" BackgroundColor="{StaticResource Primary}" 
+                    HorizontalOptions="Center">
+                <Border.StrokeShape>
+                    <RoundRectangle CornerRadius="20" />
+                </Border.StrokeShape>
+                <Label Text="DJ" TextColor="White" FontSize="40" FontAttributes="Bold" 
+                       HorizontalOptions="Center" VerticalOptions="Center" />
+            </Border>
+
+            <VerticalStackLayout Spacing="5" HorizontalOptions="Center">
+                <Label Text="Daily Journal" Style="{StaticResource Headline}" HorizontalTextAlignment="Center" />
+                <Label Text="Capture your thoughts, track your moods, and reflect on your journey daily." 
+                       Style="{StaticResource SubHeadline}" HorizontalTextAlignment="Center" MaxLines="3" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="15" Padding="20,0">
+                <Button Text="Get Started" 
+                        Command="{Binding GetStartedCommand}"
+                        HeightRequest="55"
+                        CornerRadius="12"
+                        FontSize="18"
+                        FontAttributes="Bold" />
+            </VerticalStackLayout>
+        </VerticalStackLayout>
+
+        <Label Grid.Row="1" 
+               Text="Premium Desktop Edition v1.0" 
+               TextColor="{StaticResource Neutral400}" 
+               FontSize="12" 
+               HorizontalOptions="Center" 
+               Margin="0,20,0,0" />
+    </Grid>
+</ContentPage>

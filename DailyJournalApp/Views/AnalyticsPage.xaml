@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:DailyJournalApp.ViewModels"
+             xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.Maui;assembly=LiveChartsCore.SkiaSharpView.Maui"
+             x:Class="DailyJournalApp.Views.AnalyticsPage"
+             Title="{Binding Title}">
+    <Grid RowDefinitions="Auto, *" Padding="30" RowSpacing="25">
+        <VerticalStackLayout Grid.Row="0" Spacing="5">
+            <Label Text="Analytics" Style="{StaticResource Headline}" />
+            <Label Text="Visualize your emotional journey over time" Style="{StaticResource SubHeadline}" />
+        </VerticalStackLayout>
+        
+        <Border Grid.Row="1" Padding="25">
+            <VerticalStackLayout Spacing="20">
+                <Label Text="Mood Distribution" 
+                       FontSize="16" 
+                       FontAttributes="Bold" 
+                       TextColor="{StaticResource Neutral700}" />
+                <lvc:PieChart Series="{Binding MoodSeries}" 
+                              LegendPosition="Bottom"
+                              HeightRequest="450" />
+            </VerticalStackLayout>
+        </Border>
+    </Grid>
+</ContentPage>

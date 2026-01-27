@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:DailyJournalApp.ViewModels"
+             xmlns:model="clr-namespace:DailyJournalApp.Models"
+             x:Class="DailyJournalApp.Views.TimelinePage"
+             Title="{Binding Title}"
+             x:Name="this">
+    <Grid RowDefinitions="Auto, Auto, *" Padding="30" RowSpacing="25">
+        <VerticalStackLayout Grid.Row="0" Spacing="5">
+            <Label Text="Timeline" Style="{StaticResource Headline}" />
+            <Label Text="A journey through your past reflections" Style="{StaticResource SubHeadline}" />
+        </VerticalStackLayout>
+        
+        <Border Grid.Row="1" Padding="15,0" StrokeThickness="0">
+            <SearchBar Placeholder="Search memories..." 
+                       Text="{Binding SearchText}"
+                       Margin="0"/>
+        </Border>
+        
+        <RefreshView Grid.Row="2" Command="{Binding LoadEntriesCommand}" IsRefreshing="{Binding IsBusy}">
+            <CollectionView ItemsSource="{Binding Entries}" SelectionMode="None">
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="model:JournalEntry">
+                        <Border Margin="0,0,0,20" Padding="20">
+                            <Grid ColumnDefinitions="60, *, 80" ColumnSpacing="15">
+                                <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
+                                    <Label Text="{Binding EntryDate, StringFormat='{0:MMM}'}" 
+                                           TextColor="{StaticResource Primary}" 
+                                           FontAttributes="Bold" 
+                                           FontSize="13" 
+                                           HorizontalOptions="Center"/>
+                                    <Label Text="{Binding EntryDate, StringFormat='{0:dd}'}" 
+                                           TextColor="{StaticResource Primary}" 
+                                           FontAttributes="Bold" 
+                                           FontSize="24" 
+                                           HorizontalOptions="Center"/>
+                                </VerticalStackLayout>
+                                
+                                <VerticalStackLayout Grid.Column="1" Spacing="5" VerticalOptions="Center" HorizontalOptions="Fill">
+                                    <Label Text="{Binding Title}" FontSize="18" FontAttributes="Bold" MaxLines="1" LineBreakMode="TailTruncation" />
+                                    <Label Text="{Binding PrimaryMood}" FontSize="12" TextColor="{StaticResource Secondary}" FontAttributes="Bold"/>
+                                    <Label Text="{Binding Content}" MaxLines="1" LineBreakMode="TailTruncation" TextColor="{StaticResource Neutral500}" FontSize="14"/>
+                                </VerticalStackLayout>
+
+                                <Button Grid.Column="2"
+                                        Text="Delete"
+                                        Command="{Binding BindingContext.DeleteEntryCommand, Source={x:Reference this}}"
+                                        CommandParameter="{Binding .}"
+                                        Style="{StaticResource ButtonOutlineStyle}"
+                                        TextColor="{StaticResource Danger}"
+                                        BorderColor="{StaticResource Danger}"
+                                        HeightRequest="30"
+                                        Padding="5,0"
+                                        FontSize="11"
+                                        VerticalOptions="Center"
+                                        IsVisible="{Binding BindingContext.UserIsAuthenticated, Source={x:Reference this}}" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+                <CollectionView.EmptyView>
+                    <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Margin="0,50,0,0" Spacing="10">
+                        <Label Text="Your timeline is empty" HorizontalOptions="Center" TextColor="{StaticResource Neutral400}" FontAttributes="Bold" FontSize="18"/>
+                        <Label Text="Begin your journey by writing today's reflection" HorizontalOptions="Center" TextColor="{StaticResource Neutral500}" />
+                    </VerticalStackLayout>
+                </CollectionView.EmptyView>
+            </CollectionView>
+        </RefreshView>
+    </Grid>
+</ContentPage>

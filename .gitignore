@@ -1,0 +1,25 @@
+# Visual Studio
+.vs/
+bin/
+obj/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# MAUI
+*.ap_
+*.apk
+*.aab
+*.dex
+*.class
+*.jar
+*.pdb
+
+# Local Database
+*.db
+*.db-shm
+*.db-wal
+
+# macOS
+.DS_Store
