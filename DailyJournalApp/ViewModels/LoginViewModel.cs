@@ -6,58 +6,67 @@ namespace DailyJournalApp.ViewModels
 {
     public partial class LoginViewModel : BaseViewModel
     {
-        private readonly SecurityService _securityService;
+        private readonly AuthService _authService;
 
         [ObservableProperty]
-        private string username;
+        private string password = string.Empty;
 
         [ObservableProperty]
-        private string password;
+        private string userName = "Sagar";
 
         [ObservableProperty]
-        private string errorMessage;
+        private string errorMessage = string.Empty;
 
         [ObservableProperty]
-        private bool isPasswordHidden = true;
+        private bool isSetupMode;
 
-        [RelayCommand]
-        private void TogglePasswordVisibility()
+        public bool HasError => !string.IsNullOrWhiteSpace(ErrorMessage);
+
+        public LoginViewModel(AuthService authService)
         {
-            IsPasswordHidden = !IsPasswordHidden;
-        }
-
-        public LoginViewModel(SecurityService securityService)
-        {
-            _securityService = securityService;
-            Title = "Login";
+            _authService = authService;
+            Title = "Authentication";
+            IsSetupMode = !_authService.IsPasswordSet();
         }
 
         [RelayCommand]
-        public async Task LoginAsync()
+        private async Task LoginAsync()
         {
-            if (string.IsNullOrWhiteSpace(Username) || string.IsNullOrWhiteSpace(Password))
+            ErrorMessage = string.Empty;
+            OnPropertyChanged(nameof(HasError));
+
+            if (string.IsNullOrWhiteSpace(Password))
             {
-                ErrorMessage = "Name and Password are required";
+                ErrorMessage = "Please enter a password.";
+                OnPropertyChanged(nameof(HasError));
                 return;
             }
 
+            IsBusy = true;
+            ErrorMessage = string.Empty;
+
             try
             {
-                IsBusy = true;
-                bool success = await _securityService.LoginAsync(Username, Password);
-                if (success)
+                if (IsSetupMode)
                 {
-                    ErrorMessage = string.Empty;
+                    _authService.SetPassword(Password);
+                    _authService.SetCurrentUserName(UserName);
+                    await AppShell.Current.DisplayAlert("Success", "Password set successfully!", "OK");
                     await Shell.Current.GoToAsync("//DashboardPage");
                 }
                 else
                 {
-                    ErrorMessage = "Invalid name or password";
+                    if (_authService.VerifyPassword(Password))
+                    {
+                        _authService.SetCurrentUserName(UserName);
+                        await Shell.Current.GoToAsync("//DashboardPage");
+                    }
+                    else
+                    {
+                        ErrorMessage = "Incorrect password. Please try again.";
+                        OnPropertyChanged(nameof(HasError));
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                ErrorMessage = $"Login failed: {ex.Message}";
             }
             finally
             {

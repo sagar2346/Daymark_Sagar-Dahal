@@ -3,71 +3,90 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:DailyJournalApp.ViewModels"
              x:Class="DailyJournalApp.Views.LoginPage"
+             Shell.FlyoutItemIsVisible="False"
+             Shell.NavBarIsVisible="False"
              x:DataType="vm:LoginViewModel"
-             Title="{Binding Title}">
-    
-    <Grid BackgroundColor="{AppThemeBinding Light={StaticResource Neutral100}, Dark={StaticResource Neutral950}}">
+             Background="{StaticResource DeepSpace}">
+
+    <Shell.FlyoutBehavior>Disabled</Shell.FlyoutBehavior>
+
+    <Grid BackgroundColor="{StaticResource DeepSpace}">
+        <!-- Main Card -->
         <Border VerticalOptions="Center" 
                 HorizontalOptions="Center" 
-                WidthRequest="450" 
-                Padding="40"
-                StrokeThickness="0">
-            <Border.Shadow>
-                <Shadow Brush="{StaticResource Black}" Offset="0,10" Radius="30" Opacity="0.1"/>
-            </Border.Shadow>
-
+                WidthRequest="420"
+                Style="{StaticResource GlassCard}"
+                Padding="40">
             <VerticalStackLayout Spacing="30">
-                <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
+                <!-- Branding/Welcome -->
+                <VerticalStackLayout Spacing="5" HorizontalOptions="Center">
                     <Label Text="Welcome Back" 
-                           Style="{StaticResource Headline}" 
-                           HorizontalOptions="Center"/>
+                           FontSize="28" 
+                           FontAttributes="Bold" 
+                           TextColor="White" 
+                           HorizontalOptions="Center" />
                     <Label Text="Sign in to continue your journey" 
-                           TextColor="{StaticResource Neutral500}"
+                           FontSize="14" 
+                           TextColor="{StaticResource Neutral400}" 
+                           HorizontalOptions="Center" />
+                </VerticalStackLayout>
+
+                <!-- Form Fields -->
+                <VerticalStackLayout Spacing="20">
+                    <!-- Name Field (Matching design, allows display or entry) -->
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="Name" FontSize="12" TextColor="{StaticResource Neutral400}" Margin="5,0"/>
+                        <Border StrokeShape="RoundRectangle 12" 
+                                BackgroundColor="#1E293B" 
+                                StrokeThickness="0" 
+                                HeightRequest="56"
+                                Padding="15,0">
+                            <Entry Text="{Binding UserName}" 
+                                   TextColor="White" 
+                                   FontSize="14"
+                                   VerticalOptions="Center"
+                                   BackgroundColor="Transparent"/>
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <!-- Password Field -->
+                    <VerticalStackLayout Spacing="8">
+                        <Label Text="Password" FontSize="12" TextColor="{StaticResource Neutral400}" Margin="5,0"/>
+                        <Border StrokeShape="RoundRectangle 12" 
+                                BackgroundColor="#1E293B" 
+                                StrokeThickness="0" 
+                                HeightRequest="56"
+                                Padding="15,0">
+                            <Grid ColumnDefinitions="*, Auto">
+                                <Entry Placeholder="Enter password" 
+                                       IsPassword="True"
+                                       Text="{Binding Password}"
+                                       VerticalOptions="Center"
+                                       TextColor="White"
+                                       PlaceholderColor="{StaticResource Neutral500}"
+                                       BackgroundColor="Transparent"/>
+                            </Grid>
+                        </Border>
+                    </VerticalStackLayout>
+                    
+                    <Label Text="{Binding ErrorMessage}" 
+                           TextColor="{StaticResource Danger}" 
+                           FontSize="12" 
+                           IsVisible="{Binding HasError}" 
                            HorizontalOptions="Center"/>
                 </VerticalStackLayout>
 
-                <VerticalStackLayout Spacing="20">
-                    <VerticalStackLayout Spacing="5">
-                        <Label Text="Name" 
-                               FontSize="12" 
-                               TextColor="{StaticResource Neutral600}"
-                               Margin="5,0"/>
-                        <Entry Text="{Binding Username}"
-                               Placeholder="Enter your name"
-                               FontSize="16"/>
-                    </VerticalStackLayout>
-
-                    <VerticalStackLayout Spacing="5">
-                        <Label Text="Password" 
-                               FontSize="12" 
-                               TextColor="{StaticResource Neutral600}"
-                               Margin="5,0"/>
-                        <Grid>
-                            <Entry Text="{Binding Password}"
-                                   IsPassword="{Binding IsPasswordHidden}"
-                                   Placeholder="Enter password"
-                                   FontSize="16"/>
-                            <ImageButton Source="{Binding IsPasswordHidden, Converter={StaticResource PasswordIconConverter}}"
-                                         Command="{Binding TogglePasswordVisibilityCommand}"
-                                         HorizontalOptions="End"
-                                         VerticalOptions="Center"
-                                         Margin="0,0,10,0"
-                                         WidthRequest="24"
-                                         HeightRequest="24"
-                                         BackgroundColor="Transparent"/>
-                        </Grid>
-                    </VerticalStackLayout>
-                </VerticalStackLayout>
-
-                <Label Text="{Binding ErrorMessage}"
-                       TextColor="{StaticResource Danger}"
-                       HorizontalOptions="Center"
-                       HeightRequest="20"/>
-
-                <Button Text="Login"
+                <!-- Login Button -->
+                <Button Text="Login" 
                         Command="{Binding LoginCommand}"
+                        Style="{StaticResource PrimaryButton}"
+                        BackgroundColor="{StaticResource Secondary}"
+                        TextColor="White"
+                        CornerRadius="12"
+                        HeightRequest="56"
+                        FontSize="16"
                         FontAttributes="Bold"
-                        HeightRequest="50"/>
+                        IsEnabled="{Binding IsNotBusy}"/>
             </VerticalStackLayout>
         </Border>
     </Grid>

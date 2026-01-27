@@ -4,16 +4,17 @@ namespace DailyJournalApp;
 
 public partial class App : Application
 {
-    private readonly SecurityService _securityService;
+    public App()
+    {
+        InitializeComponent();
+    }
 
-	public App(SecurityService securityService)
-	{
-		InitializeComponent();
-        _securityService = securityService;
-	}
-
-	protected override Window CreateWindow(IActivationState? activationState)
-	{
-		return new Window(new AppShell(_securityService));
-	}
+    protected override Window CreateWindow(IActivationState? activationState)
+    {
+        var window = new Window(new AppShell());
+        #if WINDOWS
+        window.Title = "Daily Journal";
+        #endif
+        return window;
+    }
 }

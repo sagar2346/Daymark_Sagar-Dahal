@@ -26,16 +26,28 @@
                 <!-- Date & Title Section (Glass Card) -->
                 <Border Style="{StaticResource GlassCard}">
                     <VerticalStackLayout Spacing="15">
-                        <DatePicker Date="{Binding SelectedDate}" 
-                                    Format="D"
-                                    FontSize="14"
+                        <Grid ColumnDefinitions="*, Auto">
+                            <DatePicker Date="{Binding SelectedDate}" 
+                                        Format="D"
+                                        FontSize="14"
+                                        TextColor="{StaticResource Primary}"
+                                        FontAttributes="Bold"
+                                        HorizontalOptions="Start">
+                                 <DatePicker.Behaviors>
+                                    <toolkit:EventToCommandBehavior EventName="DateSelected" Command="{Binding DateChangedCommand}" />
+                                </DatePicker.Behaviors>
+                            </DatePicker>
+                            
+                            <Button Grid.Column="1"
+                                    Text="+ New Entry"
+                                    Command="{Binding NewEntryCommand}"
+                                    Style="{StaticResource GhostButton}"
                                     TextColor="{StaticResource Primary}"
                                     FontAttributes="Bold"
-                                    HorizontalOptions="Center">
-                             <DatePicker.Behaviors>
-                                <toolkit:EventToCommandBehavior EventName="DateSelected" Command="{Binding DateChangedCommand}" />
-                            </DatePicker.Behaviors>
-                        </DatePicker>
+                                    HeightRequest="32"
+                                    Padding="10,0"
+                                    VerticalOptions="Center"/>
+                        </Grid>
                         
                         <Entry Placeholder="Title your day..." 
                                Text="{Binding CurrentEntry.Title}"
@@ -93,7 +105,10 @@
                                     </VisualStateManager.VisualStateGroups>
                                     <VerticalStackLayout Spacing="5" VerticalOptions="Center" HorizontalOptions="Center">
                                         <Label Text="{Binding Emoji}" FontSize="32" HorizontalOptions="Center" />
-                                        <Label Text="{Binding Name}" FontSize="10" HorizontalOptions="Center" TextColor="{StaticResource TextColorSecondary}"/>
+                                        <Label Text="{Binding Name}" 
+                                               FontSize="10" 
+                                               HorizontalOptions="Center" 
+                                               TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"/>
                                     </VerticalStackLayout>
                                 </Border>
                             </DataTemplate>
@@ -113,7 +128,7 @@
                         <BindableLayout.ItemTemplate>
                             <DataTemplate x:DataType="x:String">
                                 <Border StrokeShape="RoundRectangle 50" 
-                                        BackgroundColor="{StaticResource Primary}" 
+                                        BackgroundColor="{StaticResource Success}" 
                                         Padding="12,6"
                                         StrokeThickness="0"
                                         Margin="0,0,8,8">
@@ -156,7 +171,7 @@
                                     HeightRequest="40"
                                     Padding="0"
                                     CornerRadius="0"
-                                    BackgroundColor="{StaticResource Primary}"
+                                    BackgroundColor="{StaticResource Success}"
                                     TextColor="White"
                                     FontSize="11"
                                     FontAttributes="Bold"/>
@@ -169,13 +184,19 @@
                         <HorizontalStackLayout BindableLayout.ItemsSource="{Binding MoodSuggestions}" Spacing="8">
                              <BindableLayout.ItemTemplate>
                                 <DataTemplate x:DataType="model:Mood">
+                                 <Border StrokeShape="RoundRectangle 20" 
+                                         BackgroundColor="{StaticResource Success}" 
+                                         Padding="8,2"
+                                         StrokeThickness="0">
                                      <Button Text="{Binding Name}" 
                                              Command="{Binding BindingContext.AddSecondaryFeelingFromSuggestionCommand, Source={x:Reference this}}"
                                              CommandParameter="{Binding .}"
                                              Style="{StaticResource GhostButton}"
+                                             TextColor="White"
                                              HeightRequest="30"
-                                             Padding="10,0"
+                                             Padding="5,0"
                                              FontSize="11"/>
+                                 </Border>
                                 </DataTemplate>
                              </BindableLayout.ItemTemplate>
                         </HorizontalStackLayout>
@@ -199,8 +220,8 @@
                                         StrokeThickness="0"
                                         Margin="0,0,8,8">
                                     <HorizontalStackLayout Spacing="6">
-                                        <Label Text="{Binding Name}" TextColor="White" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
-                                        <Label Text="✕" TextColor="White" FontSize="10" VerticalOptions="Center" Opacity="0.7">
+                                        <Label Text="{Binding Name}" TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
+                                        <Label Text="✕" TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}" FontSize="10" VerticalOptions="Center" Opacity="0.7">
                                             <Label.GestureRecognizers>
                                                 <TapGestureRecognizer Command="{Binding BindingContext.RemoveTagCommand, Source={x:Reference this}}" 
                                                                       CommandParameter="{Binding .}" />
@@ -252,7 +273,7 @@
                     <!-- Editor -->
                     <Border Style="{StaticResource GlassCard}" Grid.Column="0" Padding="15">
                         <Editor Placeholder="Write your thoughts here..." 
-                                Text="{Binding MarkdownText}"
+                                Text="{Binding MarkdownText, UpdateSourceEventName=TextChanged}"
                                 VerticalOptions="Fill"
                                 BackgroundColor="Transparent"
                                 AutoSize="TextChanges"/>
@@ -262,7 +283,7 @@
                          <ScrollView>
                             <Label Text="{Binding HtmlPreview}" 
                                    TextType="Html" 
-                                   TextColor="{StaticResource TextColorPrimary}" />
+                                   TextColor="{AppThemeBinding Light={StaticResource Neutral900}, Dark={StaticResource White}}" />
                         </ScrollView>
                     </Border>
                 </Grid>

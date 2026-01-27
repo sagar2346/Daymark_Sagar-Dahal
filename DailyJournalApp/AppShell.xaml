@@ -9,53 +9,49 @@
     FlyoutBehavior="Flyout">
 
     <Shell.FlyoutHeader>
-        <Grid BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Primary}}" HeightRequest="150" Padding="20">
+        <Grid BackgroundColor="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Primary}}" 
+              HeightRequest="150" 
+              Padding="20"
+              RowDefinitions="*, Auto">
             <VerticalStackLayout VerticalOptions="Center">
                 <Label Text="Daily Journal" FontSize="20" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource White}}" />
-                <Label Text="Premium Desktop Edition" FontSize="12" TextColor="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource Neutral400}}" />
             </VerticalStackLayout>
+            <Label Grid.Row="1" 
+                   Text="Premium Desktop Edition v1.0.1 [AUTHENTICATION ENFORCED]" 
+                   TextColor="{StaticResource Neutral400}" 
+                   FontSize="12" 
+                   HorizontalOptions="Center" 
+                   Margin="0,20,0,0" />
         </Grid>
     </Shell.FlyoutHeader>
 
-    <!-- Entry Point -->
-    <ShellItem FlyoutItem.IsVisible="False">
-        <ShellContent Route="LoadingPage" ContentTemplate="{DataTemplate views:LoadingPage}" />
+    <!-- Hidden Root Pages (Login is now First to ensure it opens first) -->
+    <ShellItem x:Name="loginItem" Route="login" FlyoutItem.IsVisible="False">
+        <ShellContent ContentTemplate="{DataTemplate views:LoginPage}" />
     </ShellItem>
 
-    <!-- Main Navigation -->
-    <ShellItem Route="HomePage">
-        <ShellContent ContentTemplate="{DataTemplate views:HomePage}" />
-    </ShellItem>
-
-    <FlyoutItem Title="Dashboard" Shell.FlyoutBehavior="Flyout">
+    <!-- Main Navigation Items -->
+    <FlyoutItem Title="Dashboard" Route="dashboard">
         <ShellContent Route="DashboardPage" ContentTemplate="{DataTemplate views:DashboardPage}" />
     </FlyoutItem>
 
-    <FlyoutItem Title="Daily Entry" Shell.FlyoutBehavior="Flyout">
+    <FlyoutItem Title="Daily Entry">
         <ShellContent Route="JournalPage" ContentTemplate="{DataTemplate views:JournalPage}" />
     </FlyoutItem>
 
-    <FlyoutItem Title="Timeline" Shell.FlyoutBehavior="Flyout">
+    <FlyoutItem Title="Timeline">
         <ShellContent Route="TimelinePage" ContentTemplate="{DataTemplate views:TimelinePage}" />
     </FlyoutItem>
 
-    <FlyoutItem Title="Analytics" Shell.FlyoutBehavior="Flyout">
+    <FlyoutItem Title="Analytics">
         <ShellContent Route="AnalyticsPage" ContentTemplate="{DataTemplate views:AnalyticsPage}" />
     </FlyoutItem>
 
-    <FlyoutItem Title="Settings" Shell.FlyoutBehavior="Flyout">
+
+
+    <FlyoutItem Title="Settings">
         <ShellContent Route="SettingsPage" ContentTemplate="{DataTemplate views:SettingsPage}" />
     </FlyoutItem>
-
-    <!-- Auth Pages will be registered in code-behind via Routing.RegisterRoute -->
-    <!--
-    <ShellItem Route="primary_login" FlyoutItem.IsVisible="False">
-        <ShellContent ContentTemplate="{DataTemplate views:LoginPage}" />
-    </ShellItem>
-    <ShellItem Route="setup_entry" FlyoutItem.IsVisible="False">
-        <ShellContent ContentTemplate="{DataTemplate views:SetupPage}" />
-    </ShellItem>
-    -->
 
     <MenuItem Text="Logout" 
               Clicked="OnLogoutClicked">

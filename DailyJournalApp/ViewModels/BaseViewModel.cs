@@ -9,10 +9,9 @@ namespace DailyJournalApp.ViewModels
         private bool isBusy;
 
         [ObservableProperty]
-        private string title;
+        private string title = string.Empty;
 
-        [ObservableProperty]
-        private bool userIsAuthenticated;
+
 
         public bool IsNotBusy => !IsBusy;
     }

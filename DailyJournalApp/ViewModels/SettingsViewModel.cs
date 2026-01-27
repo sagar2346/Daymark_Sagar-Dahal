@@ -8,35 +8,44 @@ namespace DailyJournalApp.ViewModels
     {
         private readonly ExportService _exportService;
         private readonly JournalService _journalService;
-        private readonly SecurityService _securityService;
 
         [ObservableProperty]
         private bool isDarkMode;
 
         [ObservableProperty]
-        private string currentUserName;
+        private DateTime exportStartDate = DateTime.Today.AddMonths(-1);
 
         [ObservableProperty]
-        private string newPassword;
+        private DateTime exportEndDate = DateTime.Today;
 
         [ObservableProperty]
-        private string confirmNewPassword;
+        private string newPassword = string.Empty;
 
-        public SettingsViewModel(ExportService exportService, JournalService journalService, SecurityService securityService)
+        [ObservableProperty]
+        private string confirmPassword = string.Empty;
+
+        [ObservableProperty]
+        private string userName = "Sagar";
+
+        [ObservableProperty]
+        private string userProfileType = "Personal Profile";
+
+        public SettingsViewModel(ExportService exportService, JournalService journalService)
         {
             _exportService = exportService;
             _journalService = journalService;
-            _securityService = securityService;
             Title = "Settings";
+            Initialize();
+        }
 
+        [RelayCommand]
+        public void Initialize()
+        {
             // Load saved theme preference
             IsDarkMode = Preferences.Default.Get("IsDarkMode", Application.Current.RequestedTheme == AppTheme.Dark);
-            
-            CurrentUserName = Preferences.Default.Get("CurrentUser", "User");
-            UserIsAuthenticated = _securityService.IsAuthenticated;
+        }
 
-            CurrentUserName = Preferences.Default.Get("CurrentUser", "User");
-        }partial void OnIsDarkModeChanged(bool value)
+        partial void OnIsDarkModeChanged(bool value)
         {
             Application.Current.UserAppTheme = value ? AppTheme.Dark : AppTheme.Light;
             Preferences.Default.Set("IsDarkMode", value);
@@ -48,15 +57,21 @@ namespace DailyJournalApp.ViewModels
             IsDarkMode = !IsDarkMode;
         }
 
-
-
         [RelayCommand]
         public async Task ExportDataAsync()
         {
             IsBusy = true;
             try
             {
-                var entries = await _journalService.GetAllEntriesAsync();
+                var allEntries = await _journalService.GetAllEntriesAsync();
+                var entries = allEntries.Where(e => e.EntryDate.Date >= ExportStartDate.Date && 
+                                                   e.EntryDate.Date <= ExportEndDate.Date).ToList();
+
+                if (!entries.Any())
+                {
+                    await AppShell.Current.DisplayAlert("Info", "No entries found in the selected date range.", "OK");
+                    return;
+                }
                 
                 // On Windows/Desktop, we can save to a specific path
                 string fileName = $"Journal_Export_{DateTime.Now:yyyyMMdd}.pdf";
@@ -78,56 +93,46 @@ namespace DailyJournalApp.ViewModels
         }
 
         [RelayCommand]
-        public async Task UpdatePasswordAsync()
+        public async Task ChangePasswordAsync()
         {
-            if (string.IsNullOrWhiteSpace(NewPassword) || NewPassword.Length < 6)
+            if (string.IsNullOrWhiteSpace(NewPassword))
             {
-                await AppShell.Current.DisplayAlert("Error", "Password must be at least 6 characters.", "OK");
+                await AppShell.Current.DisplayAlert("Error", "Please enter a new password.", "OK");
                 return;
             }
 
-            if (NewPassword != ConfirmNewPassword)
+            if (NewPassword != ConfirmPassword)
             {
                 await AppShell.Current.DisplayAlert("Error", "Passwords do not match.", "OK");
                 return;
             }
 
-            IsBusy = true;
-            try
+            var authService = App.Current?.Handler?.MauiContext?.Services.GetService<AuthService>();
+            if (authService != null)
             {
-                await _securityService.UpdatePasswordAsync(NewPassword);
+                authService.SetPassword(NewPassword);
                 NewPassword = string.Empty;
-                ConfirmNewPassword = string.Empty;
-                await AppShell.Current.DisplayAlert("Success", "Your login password has been updated.", "OK");
-            }
-            catch (Exception ex)
-            {
-                await AppShell.Current.DisplayAlert("Error", $"Failed to update password: {ex.Message}", "OK");
-            }
-            finally
-            {
-                IsBusy = false;
+                ConfirmPassword = string.Empty;
+                await AppShell.Current.DisplayAlert("Success", "Password changed successfully!", "OK");
             }
         }
 
         [RelayCommand]
         public async Task LogoutAsync()
         {
-            bool confirm = await AppShell.Current.DisplayAlert("Logout", "Are you sure you want to logout?", "Yes", "No");
-            if (confirm)
+            bool answer = await AppShell.Current.DisplayAlert("Logout", "Are you sure you want to logout?", "Yes", "No");
+            if (!answer) return;
+
+            var authService = App.Current?.Handler?.MauiContext?.Services.GetService<AuthService>();
+            authService?.Logout();
+
+            if (Shell.Current is AppShell shell)
             {
-                _securityService.Logout();
-                MainThread.BeginInvokeOnMainThread(async () => 
-                {
-                    await Shell.Current.GoToAsync("//HomePage");
+                shell.FlyoutIsPresented = false;
+                shell.Dispatcher.Dispatch(() => {
+                    shell.CurrentItem = shell.FindByName<ShellItem>("loginItem");
                 });
             }
-        }
-
-        [RelayCommand]
-        public async Task LoginAsync()
-        {
-            await Shell.Current.GoToAsync("primary_login");
         }
     }
 }

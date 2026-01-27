@@ -3,69 +3,297 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:DailyJournalApp.ViewModels"
              xmlns:model="clr-namespace:DailyJournalApp.Models"
+             xmlns:converters="clr-namespace:DailyJournalApp.Converters"
              x:Class="DailyJournalApp.Views.TimelinePage"
              Title="{Binding Title}"
-             x:Name="this">
-    <Grid RowDefinitions="Auto, Auto, *" Padding="30" RowSpacing="25">
-        <VerticalStackLayout Grid.Row="0" Spacing="5">
-            <Label Text="Timeline" Style="{StaticResource Headline}" />
-            <Label Text="A journey through your past reflections" Style="{StaticResource SubHeadline}" />
-        </VerticalStackLayout>
+             x:DataType="vm:TimelineViewModel"
+             x:Name="timelinePage">
+    <ContentPage.Resources>
+        <converters:ColorToTransparentColorConverter x:Key="ColorToTransparent" />
+        <converters:MarkdownToHtmlConverter x:Key="MarkdownToHtml" />
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto, Auto, *" Padding="25" RowSpacing="20" Background="{StaticResource PageBackgroundBrush}">
+        <!-- Header -->
+        <Grid Grid.Row="0" ColumnDefinitions="*, Auto">
+            <VerticalStackLayout>
+                <Label Text="Your Timeline" Style="{StaticResource Headline}" />
+                <Label Text="Trace your journey through time" Style="{StaticResource SubHeadline}" />
+            </VerticalStackLayout>
+            
+            <Button Grid.Column="1" 
+                    Text="+ Add New" 
+                    Command="{Binding GoToNewEntryCommand}" 
+                    Style="{StaticResource PrimaryButton}"
+                    HeightRequest="40"
+                    Padding="20,0"
+                    VerticalOptions="Center"/>
+        </Grid>
         
-        <Border Grid.Row="1" Padding="15,0" StrokeThickness="0">
-            <SearchBar Placeholder="Search memories..." 
-                       Text="{Binding SearchText}"
-                       Margin="0"/>
+        <!-- Filter Section (Glass Card) -->
+        <Border Grid.Row="1" Style="{StaticResource GlassCard}" Padding="15">
+            <VerticalStackLayout Spacing="15">
+                <Grid ColumnDefinitions="*, Auto" ColumnSpacing="15">
+                    <Border StrokeShape="RoundRectangle 10" 
+                            BackgroundColor="{AppThemeBinding Light={StaticResource Neutral100}, Dark={StaticResource Neutral800}}"
+                            Stroke="{AppThemeBinding Light=Transparent, Dark={StaticResource Neutral700}}"
+                            StrokeThickness="1"
+                            Padding="15,0"
+                            HeightRequest="45">
+                        <Grid ColumnDefinitions="Auto, *">
+                            <Label Text="🔍" VerticalOptions="Center" Margin="0,0,10,0" Opacity="0.5"/>
+                            <Entry Grid.Column="1" 
+                                   Placeholder="Search memories..." 
+                                   Text="{Binding SearchText}"
+                                   VerticalOptions="Center"
+                                   FontSize="14"
+                                   BackgroundColor="Transparent"
+                                   TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}" />
+                        </Grid>
+                    </Border>
+                    
+                    <Button Grid.Column="1" 
+                            Text="Clear" 
+                            Command="{Binding ClearFiltersCommand}" 
+                            Style="{StaticResource GhostButton}"
+                            HeightRequest="45"
+                            Padding="15,0"/>
+                </Grid>
+                
+                <FlexLayout Wrap="Wrap" JustifyContent="SpaceBetween" AlignItems="Center">
+                     <HorizontalStackLayout Spacing="10" VerticalOptions="Center" Margin="0,5">
+                          <Border StrokeShape="RoundRectangle 8" 
+                                  Padding="10,5" 
+                                  BackgroundColor="{AppThemeBinding Light={StaticResource Neutral100}, Dark={StaticResource Neutral800}}" 
+                                  Stroke="{AppThemeBinding Light=Transparent, Dark={StaticResource Neutral700}}"
+                                  StrokeThickness="1">
+                             <HorizontalStackLayout Spacing="5">
+                                 <Label Text="📅" FontSize="12" VerticalOptions="Center"/>
+                                 <DatePicker Date="{Binding StartDate}" Format="MMM dd" FontSize="12" TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}" BackgroundColor="Transparent"/>
+                                 <Label Text="-" FontSize="12" VerticalOptions="Center" TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}"/>
+                                 <DatePicker Date="{Binding EndDate}" Format="MMM dd" FontSize="12" TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}" BackgroundColor="Transparent"/>
+                             </HorizontalStackLayout>
+                          </Border>
+                     </HorizontalStackLayout>
+                    
+                     <Border StrokeShape="RoundRectangle 8" 
+                             Padding="10,0" 
+                             BackgroundColor="{AppThemeBinding Light={StaticResource Neutral100}, Dark={StaticResource Neutral800}}" 
+                             Stroke="{AppThemeBinding Light=Transparent, Dark={StaticResource Neutral700}}"
+                             StrokeThickness="1" 
+                             HeightRequest="38">
+                         <Picker ItemsSource="{Binding AvailableMoods}" 
+                                 ItemDisplayBinding="{Binding Name}"
+                                 SelectedItem="{Binding SelectedMoodFilter}"
+                                 Title="Filter by Mood"
+                                 FontSize="12"
+                                 TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}"
+                                 TitleColor="{AppThemeBinding Light={StaticResource Neutral500}, Dark={StaticResource Neutral300}}"/>
+                     </Border>
+                </FlexLayout>
+
+                <!-- Tag Filter -->
+                <Label Text="Filter by Tag" TextColor="{AppThemeBinding Light={StaticResource Neutral800}, Dark={StaticResource Neutral200}}" Margin="0,5,0,0" FontSize="12" FontAttributes="Bold"/>
+                <CollectionView ItemsSource="{Binding AvailableTags}" 
+                                SelectionMode="Single"
+                                SelectedItem="{Binding SelectedTagFilter}"
+                                HeightRequest="35">
+                    <CollectionView.ItemsLayout>
+                        <LinearItemsLayout Orientation="Horizontal" ItemSpacing="8" />
+                    </CollectionView.ItemsLayout>
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="model:Tag">
+                            <Border StrokeShape="RoundRectangle 20"
+                                    Padding="10,0"
+                                    StrokeThickness="0"
+                                    BackgroundColor="{Binding HexColor}"
+                                    HeightRequest="25"
+                                    WidthRequest="80"> <!-- Fixed width for cleaner look in filter -->
+                                <VisualStateManager.VisualStateGroups>
+                                    <VisualStateGroup Name="CommonStates">
+                                        <VisualState Name="Normal">
+                                            <VisualState.Setters>
+                                                <Setter Property="Opacity" Value="1.0" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                        <VisualState Name="Selected">
+                                            <VisualState.Setters>
+                                                <Setter Property="Opacity" Value="1.0" />
+                                                <Setter Property="Stroke" Value="{StaticResource Success}" />
+                                                <Setter Property="StrokeThickness" Value="2" />
+                                            </VisualState.Setters>
+                                        </VisualState>
+                                    </VisualStateGroup>
+                                </VisualStateManager.VisualStateGroups>
+                                <Label Text="{Binding Name}" 
+                                       TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}" 
+                                       FontSize="11" 
+                                       FontAttributes="Bold" 
+                                       VerticalOptions="Center" 
+                                       HorizontalOptions="Center"
+                                       LineBreakMode="TailTruncation"/>
+                            </Border>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                </CollectionView>
+            </VerticalStackLayout>
         </Border>
         
+        <!-- Timeline List -->
         <RefreshView Grid.Row="2" Command="{Binding LoadEntriesCommand}" IsRefreshing="{Binding IsBusy}">
-            <CollectionView ItemsSource="{Binding Entries}" SelectionMode="None">
-                <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="model:JournalEntry">
-                        <Border Margin="0,0,0,20" Padding="20">
-                            <Grid ColumnDefinitions="60, *, 80" ColumnSpacing="15">
-                                <VerticalStackLayout Grid.Column="0" VerticalOptions="Center">
-                                    <Label Text="{Binding EntryDate, StringFormat='{0:MMM}'}" 
-                                           TextColor="{StaticResource Primary}" 
-                                           FontAttributes="Bold" 
-                                           FontSize="13" 
-                                           HorizontalOptions="Center"/>
-                                    <Label Text="{Binding EntryDate, StringFormat='{0:dd}'}" 
-                                           TextColor="{StaticResource Primary}" 
-                                           FontAttributes="Bold" 
-                                           FontSize="24" 
-                                           HorizontalOptions="Center"/>
-                                </VerticalStackLayout>
-                                
-                                <VerticalStackLayout Grid.Column="1" Spacing="5" VerticalOptions="Center" HorizontalOptions="Fill">
-                                    <Label Text="{Binding Title}" FontSize="18" FontAttributes="Bold" MaxLines="1" LineBreakMode="TailTruncation" />
-                                    <Label Text="{Binding PrimaryMood}" FontSize="12" TextColor="{StaticResource Secondary}" FontAttributes="Bold"/>
-                                    <Label Text="{Binding Content}" MaxLines="1" LineBreakMode="TailTruncation" TextColor="{StaticResource Neutral500}" FontSize="14"/>
-                                </VerticalStackLayout>
+            <Grid RowDefinitions="*, Auto">
+                <CollectionView ItemsSource="{Binding Entries}" 
+                                SelectionMode="Single"
+                                SelectedItem="{Binding SelectedEntry}"
+                                SelectionChangedCommand="{Binding ViewEntryCommand}">
+                    <CollectionView.ItemTemplate>
+                        <DataTemplate x:DataType="model:JournalEntry">
+                            <Grid Padding="0,0,0,15">
+                                <Border StrokeShape="RoundRectangle 20" 
+                                        BackgroundColor="{StaticResource SurfaceColor}"
+                                        StrokeThickness="0"
+                                        Padding="0">
+                                    <Border.Shadow>
+                                        <Shadow Brush="{StaticResource  Primary}" Offset="0,4" Radius="10" Opacity="0.08"/>
+                                    </Border.Shadow>
+                                    
+                                    <Grid ColumnDefinitions="6, *" MinimumHeightRequest="120">
+                                        <!-- Mood Strip -->
+                                        <BoxView Grid.Column="0" Color="{Binding MoodColor}" />
+                                        
+                                        <Grid Grid.Column="1" ColumnDefinitions="Auto, *, Auto" Padding="15,12">
+                                            <!-- Date Column -->
+                                            <VerticalStackLayout Grid.Column="0" VerticalOptions="Center" Spacing="0" WidthRequest="60">
+                                                <Label Text="{Binding EntryDate, StringFormat='{0:MMM}'}" 
+                                                       FontSize="11" 
+                                                       FontAttributes="Bold" 
+                                                       TextColor="{StaticResource Primary}" 
+                                                       HorizontalOptions="Center" 
+                                                       TextTransform="Uppercase"/>
+                                                <Label Text="{Binding EntryDate, StringFormat='{0:dd}'}" 
+                                                       FontSize="28" 
+                                                       FontAttributes="Bold" 
+                                                       HorizontalOptions="Center" 
+                                                       TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}"
+                                                       Margin="0,-4"/>
+                                                <Label Text="{Binding EntryDate, StringFormat='{0:ddd}'}" 
+                                                       FontSize="11" 
+                                                       TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" 
+                                                       HorizontalOptions="Center"/>
+                                            </VerticalStackLayout>
+                                            
+                                            <!-- Content Column -->
+                                            <VerticalStackLayout Grid.Column="1" VerticalOptions="Center" Spacing="4" Margin="10,0">
+                                                <HorizontalStackLayout Spacing="6">
+                                                    <Label Text="{Binding MoodEmoji}" FontSize="16" VerticalOptions="Center"/>
+                                                    <Label Text="{Binding Title}" 
+                                                           FontSize="16" 
+                                                           FontAttributes="Bold" 
+                                                           LineBreakMode="TailTruncation"
+                                                           TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+                                                </HorizontalStackLayout>
+                                                
+                                                <Label Text="{Binding Content, Converter={StaticResource MarkdownToHtml}}" 
+                                                       TextType="Html"
+                                                       FontSize="13" 
+                                                       TextColor="{StaticResource Primary}" 
+                                                       MaxLines="2" 
+                                                       LineBreakMode="TailTruncation" />
+                                                
+                                                <FlexLayout Wrap="Wrap" Margin="0,4,0,0" AlignItems="Center">
+                                                    <!-- Primary Mood -->
+                                                    <Border BackgroundColor="{Binding MoodColor, Converter={StaticResource ColorToTransparent}}" 
+                                                            Padding="8,2" 
+                                                            StrokeThickness="0" 
+                                                            StrokeShape="RoundRectangle 6"
+                                                            IsVisible="{Binding PrimaryMood, Converter={StaticResource IsNotNullConverter}}">
+                                                        <Label Text="{Binding PrimaryMood}" 
+                                                               FontSize="10" 
+                                                               FontAttributes="Bold" 
+                                                               TextColor="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}"/>
+                                                    </Border>
 
-                                <Button Grid.Column="2"
-                                        Text="Delete"
-                                        Command="{Binding BindingContext.DeleteEntryCommand, Source={x:Reference this}}"
-                                        CommandParameter="{Binding .}"
-                                        Style="{StaticResource ButtonOutlineStyle}"
-                                        TextColor="{StaticResource Danger}"
-                                        BorderColor="{StaticResource Danger}"
-                                        HeightRequest="30"
-                                        Padding="5,0"
-                                        FontSize="11"
-                                        VerticalOptions="Center"
-                                        IsVisible="{Binding BindingContext.UserIsAuthenticated, Source={x:Reference this}}" />
+                                                    <!-- Secondary Moods (Feelings) -->
+                                                    <HorizontalStackLayout BindableLayout.ItemsSource="{Binding SecondaryMoodList}" Spacing="4" Margin="4,0,0,0">
+                                                        <BindableLayout.ItemTemplate>
+                                                            <DataTemplate x:DataType="x:String">
+                                                                <Border BackgroundColor="{AppThemeBinding Light={StaticResource Neutral100}, Dark={StaticResource Neutral800}}" 
+                                                                        Padding="8,2" 
+                                                                        StrokeThickness="0" 
+                                                                        StrokeShape="RoundRectangle 6">
+                                                                    <Label Text="{Binding .}" 
+                                                                           FontSize="9" 
+                                                                           TextColor="{AppThemeBinding Light={StaticResource Neutral600}, Dark={StaticResource Neutral400}}"/>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </BindableLayout.ItemTemplate>
+                                                    </HorizontalStackLayout>
+
+                                                    <HorizontalStackLayout BindableLayout.ItemsSource="{Binding Tags}" Spacing="4" Margin="6,0,0,0">
+                                                        <BindableLayout.ItemTemplate>
+                                                            <DataTemplate x:DataType="model:Tag">
+                                                                <Border BackgroundColor="{Binding HexColor}" 
+                                                                        Padding="8,3" 
+                                                                        StrokeThickness="0" 
+                                                                        StrokeShape="RoundRectangle 6">
+                                                                    <Label Text="{Binding Name}" 
+                                                                           FontSize="10" 
+                                                                           FontAttributes="Bold" 
+                                                                           TextColor="{AppThemeBinding Light=#000000, Dark=#FFFFFF}"/>
+                                                                </Border>
+                                                            </DataTemplate>
+                                                        </BindableLayout.ItemTemplate>
+                                                    </HorizontalStackLayout>
+                                                </FlexLayout>
+                                            </VerticalStackLayout>
+                                            
+                                            <Button Grid.Column="2" 
+                                                    Text="🗑"
+                                                    Command="{Binding BindingContext.DeleteEntryCommand, Source={x:Reference timelinePage}}" 
+                                                    CommandParameter="{Binding .}"
+                                                    BackgroundColor="Transparent"
+                                                    TextColor="{StaticResource Neutral400}"
+                                                    FontSize="16"
+                                                    Padding="0"
+                                                    HeightRequest="30"
+                                                    WidthRequest="30"
+                                                    VerticalOptions="Start"/>
+                                        </Grid>
+                                    </Grid>
+                                </Border>
                             </Grid>
-                        </Border>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-                <CollectionView.EmptyView>
-                    <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Margin="0,50,0,0" Spacing="10">
-                        <Label Text="Your timeline is empty" HorizontalOptions="Center" TextColor="{StaticResource Neutral400}" FontAttributes="Bold" FontSize="18"/>
-                        <Label Text="Begin your journey by writing today's reflection" HorizontalOptions="Center" TextColor="{StaticResource Neutral500}" />
-                    </VerticalStackLayout>
-                </CollectionView.EmptyView>
-            </CollectionView>
+                        </DataTemplate>
+                    </CollectionView.ItemTemplate>
+                    <CollectionView.EmptyView>
+                        <VerticalStackLayout HorizontalOptions="Center" VerticalOptions="Center" Spacing="20" Opacity="0.5">
+                            <Label Text="🍃" FontSize="60" HorizontalOptions="Center"/>
+                            <Label Text="No memories found" HorizontalOptions="Center" FontAttributes="Bold" FontSize="18"/>
+                            <Label Text="Start your journal today." HorizontalOptions="Center" TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}" />
+                        </VerticalStackLayout>
+                    </CollectionView.EmptyView>
+                </CollectionView>
+
+                <!-- Pagination Controls -->
+                <Grid Grid.Row="1" ColumnDefinitions="Auto, *, Auto" Padding="0,10,0,0">
+                    <Button Text="← Previous" 
+                            Command="{Binding PreviousPageCommand}" 
+                            IsEnabled="{Binding CanGoPrevious}"
+                            Style="{StaticResource GhostButton}"/>
+                    
+                    <HorizontalStackLayout Grid.Column="1" HorizontalOptions="Center" VerticalOptions="Center" Spacing="5">
+                        <Label Text="Page" TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}"/>
+                        <Label Text="{Binding DisplayPageNumber}" FontAttributes="Bold" TextColor="{StaticResource Primary}"/>
+                        <Label Text="of" TextColor="{AppThemeBinding Light={StaticResource TextSecondaryLight}, Dark={StaticResource TextSecondaryDark}}"/>
+                        <Label Text="{Binding TotalPages}" FontAttributes="Bold" TextColor="{AppThemeBinding Light={StaticResource TextPrimaryLight}, Dark={StaticResource TextPrimaryDark}}"/>
+                    </HorizontalStackLayout>
+
+                    <Button Grid.Column="2" 
+                            Text="Next →" 
+                            Command="{Binding NextPageCommand}" 
+                            IsEnabled="{Binding CanGoNext}"
+                            Style="{StaticResource GhostButton}"/>
+                </Grid>
+            </Grid>
         </RefreshView>
     </Grid>
 </ContentPage>

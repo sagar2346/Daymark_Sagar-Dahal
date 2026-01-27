@@ -10,6 +10,7 @@ namespace DailyJournalApp.ViewModels
     public partial class JournalViewModel : BaseViewModel, IQueryAttributable
     {
         private readonly JournalService _journalService;
+        private readonly SemaphoreSlim _loadLock = new(1, 1);
 
         [ObservableProperty]
         private DateTime selectedDate;
@@ -89,38 +90,49 @@ namespace DailyJournalApp.ViewModels
 
         private async Task LoadEntryArgs(DateTime date)
         {
-            var entry = await _journalService.GetEntryByDateAsync(date.Date);
-            SelectedTags.Clear();
-            SelectedSecondaryMoods.Clear();
-
-            if (entry != null)
+            await _loadLock.WaitAsync();
+            try
             {
-                CurrentEntry = entry;
-                MarkdownText = entry.Content;
-                SelectedMood = Moods.FirstOrDefault(m => m.Name == entry.PrimaryMood);
-                
-                // Load Tags
-                var tags = await _journalService.GetTagsForEntryAsync(entry.Id);
-                foreach (var t in tags) SelectedTags.Add(t);
+                var entry = await _journalService.GetEntryByDateAsync(date.Date);
+                SelectedTags.Clear();
+                SelectedSecondaryMoods.Clear();
 
-                // Load Secondary Moods
-                if (!string.IsNullOrEmpty(entry.SecondaryMoods))
+                if (entry != null)
                 {
-                    var names = entry.SecondaryMoods.Split(',', StringSplitOptions.RemoveEmptyEntries);
-                    foreach (var name in names)
+                    CurrentEntry = entry;
+                    MarkdownText = entry.Content;
+                    SelectedMood = Moods.FirstOrDefault(m => m.Name == entry.PrimaryMood);
+                    
+                    // Load Tags
+                    var tags = await _journalService.GetTagsForEntryAsync(entry.Id);
+                    foreach (var t in tags) SelectedTags.Add(t);
+
+                    // Load Secondary Moods (Deduplicate)
+                    if (!string.IsNullOrEmpty(entry.SecondaryMoods))
                     {
-                         SelectedSecondaryMoods.Add(name.Trim());
+                        var names = entry.SecondaryMoods.Split(',', StringSplitOptions.RemoveEmptyEntries)
+                                                     .Select(n => n.Trim())
+                                                     .Distinct()
+                                                     .ToList();
+                        foreach (var name in names)
+                        {
+                             SelectedSecondaryMoods.Add(name);
+                        }
                     }
                 }
+                else
+                {
+                    // New blank entry
+                    CurrentEntry = new JournalEntry { EntryDate = date.Date };
+                    MarkdownText = string.Empty;
+                    SelectedMood = null;
+                }
+                UpdatePreview();
             }
-            else
+            finally
             {
-                // New blank entry
-                CurrentEntry = new JournalEntry { EntryDate = date.Date };
-                MarkdownText = string.Empty;
-                SelectedMood = null;
+                _loadLock.Release();
             }
-            UpdatePreview();
         }
 
         /// <summary>
@@ -144,8 +156,9 @@ namespace DailyJournalApp.ViewModels
                 CurrentEntry.Content = MarkdownText;
                 CurrentEntry.PrimaryMood = SelectedMood?.Name;
                 
-                // Save Secondary Moods
-                CurrentEntry.SecondaryMoods = string.Join(",", SelectedSecondaryMoods);
+                // Save Secondary Moods (Deduplicate)
+                var uniqueMoods = SelectedSecondaryMoods.Distinct().ToList();
+                CurrentEntry.SecondaryMoods = string.Join(",", uniqueMoods);
 
                 await _journalService.SaveEntryAsync(CurrentEntry);
 
@@ -182,6 +195,13 @@ namespace DailyJournalApp.ViewModels
                 await _journalService.DeleteEntryAsync(CurrentEntry);
                 await LoadEntryArgs(SelectedDate); // Reload to clear
             }
+        }
+
+        [RelayCommand]
+        public async Task NewEntry()
+        {
+            SelectedDate = DateTime.Today;
+            await LoadEntryArgs(SelectedDate);
         }
 
         // Helper to update preview when MarkdownText changes
@@ -293,13 +313,27 @@ namespace DailyJournalApp.ViewModels
 
         private void UpdatePreview()
         {
-             if (string.IsNullOrWhiteSpace(MarkdownText))
-             {
-                 HtmlPreview = string.Empty;
-                 return;
-             }
-             var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
-             HtmlPreview = Markdown.ToHtml(MarkdownText, pipeline);
+            try 
+            {
+                if (string.IsNullOrWhiteSpace(MarkdownText))
+                {
+                    HtmlPreview = string.Empty;
+                    return;
+                }
+                
+                var pipeline = new MarkdownPipelineBuilder().UseAdvancedExtensions().Build();
+                var result = Markdown.ToHtml(MarkdownText, pipeline);
+                
+                // Ensure the output is updated on the main thread
+                MainThread.BeginInvokeOnMainThread(() => {
+                    HtmlPreview = result;
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Markdown conversion error: {ex.Message}");
+                HtmlPreview = $"<p style='color:red;'>Error rendering preview: {ex.Message}</p>";
+            }
         }
 
         public async void ApplyQueryAttributes(IDictionary<string, object> query)

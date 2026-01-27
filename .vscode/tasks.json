@@ -1,0 +1,17 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/DailyJournalApp/DailyJournalApp.csproj",
+                "-f",
+                "net9.0-windows10.0.19041.0"
+            ],
+            "problemMatcher": "$msCompile"
+        }
+    ]
+}

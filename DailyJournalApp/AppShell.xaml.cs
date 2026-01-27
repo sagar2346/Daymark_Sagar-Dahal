@@ -4,25 +4,41 @@ namespace DailyJournalApp;
 
 public partial class AppShell : Shell
 {
-    private readonly SecurityService _securityService;
+    public AppShell()
+    {
+        InitializeComponent();
+        Routing.RegisterRoute("dashboard", typeof(Views.DashboardPage));
+        
+        // Ensure the app starts on the Login page
+        CurrentItem = loginItem;
+    }
 
-	public AppShell(SecurityService securityService)
-	{
-        _securityService = securityService;
-		InitializeComponent();
-
-        Routing.RegisterRoute("primary_login", typeof(DailyJournalApp.Views.LoginPage));
-        Routing.RegisterRoute("setup_entry", typeof(DailyJournalApp.Views.SetupPage));
-	}
+    private void CheckAuthentication()
+    {
+        var authService = Handler?.MauiContext?.Services.GetService<AuthService>() 
+                         ?? MauiProgram.Services.GetService<AuthService>(); // Fallback if handler not yet ready
+        
+        if (authService != null)
+        {
+            authService.Logout(); // Force login every time the app starts as requested
+        }
+    }
 
     private async void OnLogoutClicked(object sender, EventArgs e)
     {
-        bool confirm = await DisplayAlert("Logout", "Are you sure you want to logout?", "Yes", "No");
-        if (confirm)
-        {
-            _securityService.Logout();
-            Shell.Current.FlyoutIsPresented = false;
-            await Shell.Current.GoToAsync("//HomePage");
-        }
+        bool answer = await DisplayAlert("Logout", "Are you sure you want to logout?", "Yes", "No");
+        if (!answer) return;
+
+        var authService = Handler?.MauiContext?.Services.GetService<AuthService>() 
+                         ?? MauiProgram.Services.GetService<AuthService>();
+        authService?.Logout();
+
+        // Close flyout first to prevent navigation issues on some platforms
+        FlyoutIsPresented = false;
+        
+        // Use Dispatcher to ensure stable navigation back to login
+        Dispatcher.Dispatch(() => {
+            CurrentItem = loginItem;
+        });
     }
 }

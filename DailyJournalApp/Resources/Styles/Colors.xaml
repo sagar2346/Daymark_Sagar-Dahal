@@ -4,23 +4,29 @@
     xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
     xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml">
 
-    <!-- Note: For Android please see also Platforms\Android\Resources\values\colors.xml -->
-
     <!-- Modern Professional Palette -->
-    <Color x:Key="Primary">#0D9488</Color> <!-- Teal 600 -->
-    <Color x:Key="PrimaryDark">#0F766E</Color> <!-- Teal 700 -->
-    <Color x:Key="PrimaryLight">#2DD4BF</Color> <!-- Teal 400 -->
-    <Color x:Key="PrimaryTransparent">#1A0D9488</Color>
+    <!-- Primary Brand -->
+    <Color x:Key="Primary">#6366F1</Color>
+    <Color x:Key="PrimaryDark">#4338CA</Color>
+    <Color x:Key="PrimaryLight">#818CF8</Color>
+    <Color x:Key="PrimaryTransparent">#1A6366F1</Color>
     
-    <Color x:Key="Secondary">#6366F1</Color> <!-- Indigo 500 -->
-    <Color x:Key="SecondaryDark">#4338CA</Color> <!-- Indigo 700 -->
-    
-    <Color x:Key="Tertiary">#F59E0B</Color> <!-- Amber 500 -->
+    <!-- Secondary / Accent -->
+    <Color x:Key="Secondary">#0D9488</Color>
+    <Color x:Key="SecondaryDark">#0F766E</Color>
+    <Color x:Key="SecondaryLight">#2DD4BF</Color>
 
-    <Color x:Key="White">#FFFFFF</Color>
-    <Color x:Key="Black">#000000</Color>
+    <!-- Deep Space Dark Mode Backgrounds -->
+    <Color x:Key="MidnightBlue">#0F172A</Color>
+    <Color x:Key="DeepSpace">#020617</Color>
+    <Color x:Key="GlassSurfaceDark">#1E293B</Color>
     
-    <!-- Neutral Colors -->
+    <!-- Crisp Light Mode Backgrounds -->
+    <Color x:Key="CloudWhite">#F8FAFC</Color>
+    <Color x:Key="PureWhite">#FFFFFF</Color>
+    <Color x:Key="GlassSurfaceLight">#FFFFFF</Color>
+
+    <!-- Neutrals -->
     <Color x:Key="Neutral50">#F8FAFC</Color>
     <Color x:Key="Neutral100">#F1F5F9</Color>
     <Color x:Key="Neutral200">#E2E8F0</Color>
@@ -31,35 +37,41 @@
     <Color x:Key="Neutral700">#334155</Color>
     <Color x:Key="Neutral800">#1E293B</Color>
     <Color x:Key="Neutral900">#0F172A</Color>
-    <Color x:Key="Neutral950">#020617</Color>
+    
+    <Color x:Key="White">#FFFFFF</Color>
+    <Color x:Key="Black">#000000</Color>
 
-    <!-- Semantic Colors -->
-    <Color x:Key="Success">#22C55E</Color>
+    <!-- UI Semantic Surface Colors -->
+    <Color x:Key="SurfaceColorLight">#FFFFFF</Color>
+    <Color x:Key="SurfaceColorDark">#1E293B</Color>
+    
+    <Color x:Key="SurfaceColor">#FFFFFF</Color> <!-- Local fallback -->
+    
+    <!-- Text Colors -->
+    <Color x:Key="TextPrimaryLight">#0F172A</Color>
+    <Color x:Key="TextPrimaryDark">#F1F5F9</Color>
+    <Color x:Key="TextSecondaryLight">#475569</Color>
+    <Color x:Key="TextSecondaryDark">#94A3B8</Color>
+
+    <Color x:Key="TextColorPrimary">#0F172A</Color> <!-- Fallback -->
+    <Color x:Key="TextColorSecondary">#475569</Color> <!-- Fallback -->
+
+    <!-- Semantic -->
+    <Color x:Key="Success">#10B981</Color>
     <Color x:Key="Warning">#F59E0B</Color>
     <Color x:Key="Danger">#EF4444</Color>
-    <Color x:Key="Info">#3B82F6</Color>
 
-    <!-- Theme-aware backgrounds -->
-    <Color x:Key="LightBackground">#F8FAFC</Color>
-    <Color x:Key="LightSurface">#FFFFFF</Color>
-    <Color x:Key="DarkBackground">#0F172A</Color>
-    <Color x:Key="DarkSurface">#1E293B</Color>
-
+    <!-- Brushes -->
     <SolidColorBrush x:Key="PrimaryBrush" Color="{StaticResource Primary}"/>
-    <SolidColorBrush x:Key="SecondaryBrush" Color="{StaticResource Secondary}"/>
-    <SolidColorBrush x:Key="TertiaryBrush" Color="{StaticResource Tertiary}"/>
-    <SolidColorBrush x:Key="WhiteBrush" Color="{StaticResource White}"/>
-    <SolidColorBrush x:Key="BlackBrush" Color="{StaticResource Black}"/>
-    <SolidColorBrush x:Key="SurfaceBrush" Color="{AppThemeBinding Light={StaticResource LightSurface}, Dark={StaticResource DarkSurface}}"/>
-    <SolidColorBrush x:Key="BackgroundBrush" Color="{AppThemeBinding Light={StaticResource LightBackground}, Dark={StaticResource DarkBackground}}"/>
-
-    <SolidColorBrush x:Key="Neutral100Brush" Color="{StaticResource Neutral100}"/>
-    <SolidColorBrush x:Key="Neutral200Brush" Color="{StaticResource Neutral200}"/>
-    <SolidColorBrush x:Key="Neutral300Brush" Color="{StaticResource Neutral300}"/>
-    <SolidColorBrush x:Key="Neutral400Brush" Color="{StaticResource Neutral400}"/>
-    <SolidColorBrush x:Key="Neutral500Brush" Color="{StaticResource Neutral500}"/>
-    <SolidColorBrush x:Key="Neutral600Brush" Color="{StaticResource Neutral600}"/>
-    <SolidColorBrush x:Key="Neutral700Brush" Color="{StaticResource Neutral700}"/>
-    <SolidColorBrush x:Key="Neutral800Brush" Color="{StaticResource Neutral800}"/>
-    <SolidColorBrush x:Key="Neutral900Brush" Color="{StaticResource Neutral900}"/>
+    <SolidColorBrush x:Key="PageBackgroundBrush">
+        <SolidColorBrush.Color>
+            <AppThemeBinding Light="{StaticResource CloudWhite}" Dark="{StaticResource DeepSpace}" />
+        </SolidColorBrush.Color>
+    </SolidColorBrush>
+    
+    <!-- Gradients -->
+    <LinearGradientBrush x:Key="PrimaryGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="{StaticResource Primary}" Offset="0.0" />
+        <GradientStop Color="{StaticResource PrimaryDark}" Offset="1.0" />
+    </LinearGradientBrush>
 </ResourceDictionary>

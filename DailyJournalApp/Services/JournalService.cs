@@ -11,6 +11,12 @@ namespace DailyJournalApp.Services
             _databaseService = databaseService;
         }
 
+        public async Task<List<T>> GetAsync<T>() where T : new()
+        {
+            var db = await _databaseService.GetConnectionAsync();
+            return await db.Table<T>().ToListAsync();
+        }
+
         public async Task<JournalEntry> GetEntryByDateAsync(DateTime date)
         {
             var db = await _databaseService.GetConnectionAsync();
@@ -69,6 +75,10 @@ namespace DailyJournalApp.Services
         public async Task DeleteEntryAsync(JournalEntry entry)
         {
             var db = await _databaseService.GetConnectionAsync();
+            
+            // Delete associated tags first
+            await db.Table<EntryTag>().Where(et => et.EntryId == entry.Id).DeleteAsync();
+            
             await db.DeleteAsync(entry);
         }
 
@@ -83,5 +93,84 @@ namespace DailyJournalApp.Services
             var db = await _databaseService.GetConnectionAsync();
             return await db.Table<JournalEntry>().OrderByDescending(x => x.EntryDate).ToListAsync();
         }
+
+        /// <summary>
+        /// Gets a paginated list of journal entries.
+        /// </summary>
+        /// <param name="pageIndex">0-based page index.</param>
+        /// <param name="pageSize">Number of items per page.</param>
+        public async Task<List<JournalEntry>> GetEntriesPaginatedAsync(int pageIndex, int pageSize)
+        {
+            var db = await _databaseService.GetConnectionAsync();
+            return await db.Table<JournalEntry>()
+                            .OrderByDescending(x => x.EntryDate)
+                            .Skip(pageIndex * pageSize)
+                            .Take(pageSize)
+                            .ToListAsync();
+        }
+
+        /// <summary>
+        /// Gets the total number of journal entries in the database.
+        /// </summary>
+        public async Task<int> GetTotalEntriesCountAsync()
+        {
+            var db = await _databaseService.GetConnectionAsync();
+            return await db.Table<JournalEntry>().CountAsync();
+        }
+
+        #region Tag Management
+
+        public async Task<List<Tag>> GetTagsAsync()
+        {
+            var db = await _databaseService.GetConnectionAsync();
+            return await db.Table<Tag>().ToListAsync();
+        }
+
+        public async Task<List<Tag>> GetTagsForEntryAsync(int entryId)
+        {
+            var db = await _databaseService.GetConnectionAsync();
+            var query = "SELECT T.* FROM Tag T INNER JOIN EntryTag ET ON T.Id = ET.TagId WHERE ET.EntryId = ?";
+            return await db.QueryAsync<Tag>(query, entryId);
+        }
+
+        // Efficient load for timeline
+        public async Task<List<EntryTag>> GetAllEntryTagsAsync()
+        {
+            var db = await _databaseService.GetConnectionAsync();
+            return await db.Table<EntryTag>().ToListAsync();
+        }
+
+        public async Task AddTagToEntryAsync(int entryId, string tagName, string color)
+        {
+            var db = await _databaseService.GetConnectionAsync();
+            
+            // Create tag if it doesn't exist
+            var tag = await db.Table<Tag>().Where(t => t.Name == tagName).FirstOrDefaultAsync();
+            if (tag == null)
+            {
+                tag = new Tag { Name = tagName, HexColor = color }; 
+                await db.InsertAsync(tag);
+            }
+
+            // check if link exists
+            var existingLink = await db.Table<EntryTag>()
+                                       .Where(et => et.EntryId == entryId && et.TagId == tag.Id)
+                                       .FirstOrDefaultAsync();
+            
+            if (existingLink == null)
+            {
+                await db.InsertAsync(new EntryTag { EntryId = entryId, TagId = tag.Id });
+            }
+        }
+
+        public async Task RemoveTagFromEntryAsync(int entryId, int tagId)
+        {
+            var db = await _databaseService.GetConnectionAsync();
+            await db.Table<EntryTag>()
+                    .Where(et => et.EntryId == entryId && et.TagId == tagId)
+                    .DeleteAsync();
+        }
+
+        #endregion
     }
 }
