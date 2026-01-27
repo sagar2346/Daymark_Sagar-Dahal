@@ -7,12 +7,14 @@ A high-performance, secure, and feature-rich cross-platform journaling applicati
 - **🔐 Secure Authentication:** Password-protected entries with setup and login modes.
 - **✍️ Markdown Editor:** Rich-text support with live HTML preview rendering.
 - **📊 Advanced Analytics:** Interactive charts for mood distribution, word count trends, and time patterns.
-- **🔥 Persistence & Habits:** Automatic journaling streak tracking and a "one entry per day" logic to build consistency.
+- **🔥 Persistence & Habits:** Automatic journaling streak tracking to build long-term consistency.
 - **🏷️ Smart Metadata:** Comprehensive tagging system and multi-emoji mood tracking (Primary & Secondary).
 - **🔍 Powerful Filtering:** Search through years of entries by text, date ranges, moods, or tags.
 - **📑 Database Pagination:** High-speed performance regardless of entry count.
 - **🌑 Global Theming:** Full support for Dark Mode and Light Mode with preference persistence.
 - **📅 Visual Timeline:** Historical browsing with specialized UI for mood colors and categories.
+- **🗓️ Dynamic Calendar:** Interactive date selection for precise journaling and historical retrieval.
+- **🛑 Smart Limit System:** Quality control logic preventing more than one entry per day for focused writing.
 - **📁 Data Portability:** Export your journal entries to high-quality PDF documents based on selected date ranges.
 
 ## 🛠️ Technical Stack
