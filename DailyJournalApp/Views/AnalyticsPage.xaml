@@ -4,23 +4,69 @@
              xmlns:vm="clr-namespace:DailyJournalApp.ViewModels"
              xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.Maui;assembly=LiveChartsCore.SkiaSharpView.Maui"
              x:Class="DailyJournalApp.Views.AnalyticsPage"
-             Title="{Binding Title}">
-    <Grid RowDefinitions="Auto, *" Padding="30" RowSpacing="25">
-        <VerticalStackLayout Grid.Row="0" Spacing="5">
-            <Label Text="Analytics" Style="{StaticResource Headline}" />
-            <Label Text="Visualize your emotional journey over time" Style="{StaticResource SubHeadline}" />
-        </VerticalStackLayout>
-        
-        <Border Grid.Row="1" Padding="25">
-            <VerticalStackLayout Spacing="20">
-                <Label Text="Mood Distribution" 
-                       FontSize="16" 
-                       FontAttributes="Bold" 
-                       TextColor="{StaticResource Neutral700}" />
-                <lvc:PieChart Series="{Binding MoodSeries}" 
-                              LegendPosition="Bottom"
-                              HeightRequest="450" />
+             Title="{Binding Title}"
+             x:DataType="vm:AnalyticsViewModel">
+    <ScrollView Background="{StaticResource DeepSpace}">
+        <Grid RowDefinitions="Auto, Auto, Auto, Auto" Padding="30" RowSpacing="25">
+            <!-- Header Section -->
+            <VerticalStackLayout Grid.Row="0" Spacing="5">
+                <Label Text="Insights" Style="{StaticResource Headline}" TextColor="White" />
+                <Label Text="A deeper look into your journaling habits" Style="{StaticResource SubHeadline}" />
             </VerticalStackLayout>
-        </Border>
-    </Grid>
+
+            <!-- Summary Stats Cards -->
+            <Grid Grid.Row="1" ColumnDefinitions="*, *, *" ColumnSpacing="20">
+                <Border Grid.Column="0" Style="{StaticResource GlassCard}" Padding="20">
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="TOTAL WORDS" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource TextColorSecondary}" />
+                        <Label Text="{Binding TotalWordsRecorded}" FontSize="28" FontAttributes="Bold" TextColor="{StaticResource PrimaryLight}" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Grid.Column="1" Style="{StaticResource GlassCard}" Padding="20">
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="AVG WORDS" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource TextColorSecondary}" />
+                        <Label Text="{Binding AvgWordsPerEntry}" FontSize="28" FontAttributes="Bold" TextColor="{StaticResource SecondaryLight}" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Grid.Column="2" Style="{StaticResource GlassCard}" Padding="20">
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="BEST TIME" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource TextColorSecondary}" />
+                        <Label Text="{Binding PeakJournalingTime}" FontSize="22" FontAttributes="Bold" TextColor="#818CF8" VerticalOptions="Center" Margin="0,5,0,0"/>
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+            
+            <!-- Main Charts Row -->
+            <Grid Grid.Row="2" ColumnDefinitions="*, *" ColumnSpacing="25" HeightRequest="450">
+                <!-- Mood Pie Card -->
+                <Border Grid.Column="0" Style="{StaticResource GlassCard}" Padding="25">
+                    <VerticalStackLayout Spacing="15">
+                        <Label Text="Mood Distribution" FontSize="18" FontAttributes="Bold" TextColor="White" />
+                        <lvc:PieChart Series="{Binding MoodSeries}" 
+                                      LegendPosition="Bottom" 
+                                      HeightRequest="320" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <!-- Time Pattern Card -->
+                <Border Grid.Column="1" Style="{StaticResource GlassCard}" Padding="25">
+                    <VerticalStackLayout Spacing="15">
+                        <Label Text="Journaling Timing" FontSize="18" FontAttributes="Bold" TextColor="White" />
+                        <lvc:CartesianChart Series="{Binding TimePatternSeries}" 
+                                           HeightRequest="320" />
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+
+            <!-- Word Trend Row -->
+            <Border Grid.Row="3" Style="{StaticResource GlassCard}" Padding="25">
+                <VerticalStackLayout Spacing="15">
+                    <Label Text="Writing Engagement (Word Count per Entry)" FontSize="18" FontAttributes="Bold" TextColor="White" />
+                    <lvc:CartesianChart Series="{Binding WordTrendSeries}" 
+                                       XAxes="{Binding XAxes}" 
+                                       HeightRequest="350" />
+                </VerticalStackLayout>
+            </Border>
+        </Grid>
+    </ScrollView>
 </ContentPage>
