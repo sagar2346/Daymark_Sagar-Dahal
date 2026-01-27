@@ -148,6 +148,18 @@ namespace DailyJournalApp.ViewModels
             {
                 if (CurrentEntry == null) return;
 
+                if (CurrentEntry.Id == 0)
+                {
+                    var existing = await _journalService.GetEntryByDateAsync(CurrentEntry.EntryDate);
+                    if (existing != null)
+                    {
+                        MainThread.BeginInvokeOnMainThread(async () => {
+                            await Shell.Current.DisplayAlert("Journal Limit", "journal limit exceed(only one per day)", "OK");
+                        });
+                        return;
+                    }
+                }
+
                 if (string.IsNullOrWhiteSpace(CurrentEntry.Title))
                 {
                     CurrentEntry.Title = "Untitled";
@@ -200,8 +212,30 @@ namespace DailyJournalApp.ViewModels
         [RelayCommand]
         public async Task NewEntry()
         {
-            SelectedDate = DateTime.Today;
-            await LoadEntryArgs(SelectedDate);
+            try
+            {
+                SelectedDate = DateTime.Today;
+                var existing = await _journalService.GetEntryByDateAsync(SelectedDate);
+                
+                if (existing != null)
+                {
+                    MainThread.BeginInvokeOnMainThread(async () => {
+                        await Shell.Current.DisplayAlert("Journal Limit", "journal limit exceed(only one per day)", "OK");
+                    });
+                }
+
+                // Open a new blank journal entry page (not the saved one)
+                CurrentEntry = new JournalEntry { EntryDate = SelectedDate };
+                MarkdownText = string.Empty;
+                SelectedMood = null;
+                SelectedSecondaryMoods.Clear();
+                SelectedTags.Clear();
+                UpdatePreview();
+            }
+            catch (Exception ex)
+            {
+                await Shell.Current.DisplayAlert("Error", $"Failed to prepare new entry: {ex.Message}", "OK");
+            }
         }
 
         // Helper to update preview when MarkdownText changes

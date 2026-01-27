@@ -20,20 +20,11 @@ namespace DailyJournalApp.Services
         public async Task<JournalEntry> GetEntryByDateAsync(DateTime date)
         {
             var db = await _databaseService.GetConnectionAsync();
-            // Compare Date component only. 
-            // SQLite stores ticks or ISO strings depending on config, but usually we query by range or check equality logic.
-            // Safe bet: Query all or use custom query. SQLite-net-pcl handles DateTime.
-            // Let's optimize: WHERE EntryDate = date.Date
+            var start = date.Date;
+            var end = start.AddDays(1);
             
-            // To ensure we match just the date part, we might need to be careful. 
-            // Ideally EntryDate in DB is stored as Midnight.
-            var targetDate = date.Date; 
-            
-            // Note: SQLite comparison might be tricky with ticks. 
-            // Let's filter in memory if dataset is small, or use query. 
-            // For now, let's try direct query assuming we save as Date.
             var entry = await db.Table<JournalEntry>()
-                                .Where(e => e.EntryDate == targetDate)
+                                .Where(e => e.EntryDate >= start && e.EntryDate < end)
                                 .FirstOrDefaultAsync();
             return entry;
         }

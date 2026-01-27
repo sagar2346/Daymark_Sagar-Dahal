@@ -7,61 +7,82 @@
              Title="{Binding Title}"
              x:DataType="vm:AnalyticsViewModel">
     <ScrollView Background="{StaticResource DeepSpace}">
-        <Grid RowDefinitions="Auto, Auto, Auto, Auto" Padding="30" RowSpacing="25">
+        <Grid RowDefinitions="Auto, Auto, Auto, Auto, Auto" Padding="30" RowSpacing="30">
             <!-- Header Section -->
             <VerticalStackLayout Grid.Row="0" Spacing="5">
-                <Label Text="Insights" Style="{StaticResource Headline}" TextColor="White" />
-                <Label Text="A deeper look into your journaling habits" Style="{StaticResource SubHeadline}" />
+                <Label Text="My Personal Insights" FontSize="36" FontAttributes="Bold" TextColor="White" />
+                <Label Text="Deep dive into your thoughts, moods, and habits" FontSize="16" TextColor="{StaticResource Neutral400}" />
             </VerticalStackLayout>
 
             <!-- Summary Stats Cards -->
             <Grid Grid.Row="1" ColumnDefinitions="*, *, *" ColumnSpacing="20">
                 <Border Grid.Column="0" Style="{StaticResource GlassCard}" Padding="20">
                     <VerticalStackLayout Spacing="5">
-                        <Label Text="TOTAL WORDS" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource TextColorSecondary}" />
-                        <Label Text="{Binding TotalWordsRecorded}" FontSize="28" FontAttributes="Bold" TextColor="{StaticResource PrimaryLight}" />
+                        <Label Text="TOTAL WORDS" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource Neutral400}" CharacterSpacing="1"/>
+                        <Label Text="{Binding TotalWordsRecorded}" FontSize="32" FontAttributes="Bold" TextColor="{StaticResource PrimaryLight}" />
                     </VerticalStackLayout>
                 </Border>
                 <Border Grid.Column="1" Style="{StaticResource GlassCard}" Padding="20">
                     <VerticalStackLayout Spacing="5">
-                        <Label Text="AVG WORDS" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource TextColorSecondary}" />
-                        <Label Text="{Binding AvgWordsPerEntry}" FontSize="28" FontAttributes="Bold" TextColor="{StaticResource SecondaryLight}" />
+                        <Label Text="AVG WORDS" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource Neutral400}" CharacterSpacing="1"/>
+                        <Label Text="{Binding AvgWordsPerEntry}" FontSize="32" FontAttributes="Bold" TextColor="{StaticResource SecondaryLight}" />
                     </VerticalStackLayout>
                 </Border>
                 <Border Grid.Column="2" Style="{StaticResource GlassCard}" Padding="20">
                     <VerticalStackLayout Spacing="5">
-                        <Label Text="BEST TIME" FontSize="10" FontAttributes="Bold" TextColor="{StaticResource TextColorSecondary}" />
-                        <Label Text="{Binding PeakJournalingTime}" FontSize="22" FontAttributes="Bold" TextColor="#818CF8" VerticalOptions="Center" Margin="0,5,0,0"/>
+                        <Label Text="BEST TIME" FontSize="11" FontAttributes="Bold" TextColor="{StaticResource Neutral400}" CharacterSpacing="1"/>
+                        <Label Text="{Binding PeakJournalingTime}" FontSize="24" FontAttributes="Bold" TextColor="#818CF8" VerticalOptions="Center" Margin="0,5,0,0"/>
                     </VerticalStackLayout>
                 </Border>
             </Grid>
             
             <!-- Main Charts Row -->
-            <Grid Grid.Row="2" ColumnDefinitions="*, *" ColumnSpacing="25" HeightRequest="450">
+            <Grid Grid.Row="2" ColumnDefinitions="*, *" ColumnSpacing="25" HeightRequest="480">
                 <!-- Mood Pie Card -->
                 <Border Grid.Column="0" Style="{StaticResource GlassCard}" Padding="25">
-                    <VerticalStackLayout Spacing="15">
-                        <Label Text="Mood Distribution" FontSize="18" FontAttributes="Bold" TextColor="White" />
+                    <VerticalStackLayout Spacing="20">
+                        <VerticalStackLayout Spacing="5">
+                            <Label Text="My Mood Balance" FontSize="22" FontAttributes="Bold" TextColor="White" />
+                            <Label TextType="Html" Text="{Binding InsightSummary}" FontSize="12" TextColor="{StaticResource Neutral400}" />
+                        </VerticalStackLayout>
                         <lvc:PieChart Series="{Binding MoodSeries}" 
                                       LegendPosition="Bottom" 
-                                      HeightRequest="320" />
+                                      HeightRequest="300" />
                     </VerticalStackLayout>
                 </Border>
 
-                <!-- Time Pattern Card -->
+                <!-- Tag Popularity Card -->
                 <Border Grid.Column="1" Style="{StaticResource GlassCard}" Padding="25">
-                    <VerticalStackLayout Spacing="15">
-                        <Label Text="Journaling Timing" FontSize="18" FontAttributes="Bold" TextColor="White" />
-                        <lvc:CartesianChart Series="{Binding TimePatternSeries}" 
-                                           HeightRequest="320" />
+                    <VerticalStackLayout Spacing="20">
+                        <VerticalStackLayout Spacing="5">
+                            <Label Text="My Favorite Topics" FontSize="22" FontAttributes="Bold" TextColor="White" />
+                            <Label TextType="Html" Text="{Binding MostUsedTagPhrase}" FontSize="12" TextColor="{StaticResource Neutral400}" />
+                        </VerticalStackLayout>
+                        <lvc:CartesianChart Series="{Binding TagPopularitySeries}" 
+                                           HeightRequest="300" />
                     </VerticalStackLayout>
                 </Border>
             </Grid>
 
-            <!-- Word Trend Row -->
+            <!-- Timing Row -->
             <Border Grid.Row="3" Style="{StaticResource GlassCard}" Padding="25">
-                <VerticalStackLayout Spacing="15">
-                    <Label Text="Writing Engagement (Word Count per Entry)" FontSize="18" FontAttributes="Bold" TextColor="White" />
+                <VerticalStackLayout Spacing="20">
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="When I Reflect" FontSize="22" FontAttributes="Bold" TextColor="White" />
+                        <Label Text="A breakdown of when you prefer to write throughout the day" FontSize="12" TextColor="{StaticResource Neutral400}" />
+                    </VerticalStackLayout>
+                    <lvc:CartesianChart Series="{Binding TimePatternSeries}" 
+                                       HeightRequest="350" />
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- Word Trend Row -->
+            <Border Grid.Row="4" Style="{StaticResource GlassCard}" Padding="25">
+                <VerticalStackLayout Spacing="20">
+                    <VerticalStackLayout Spacing="5">
+                        <Label Text="My Writing Journey" FontSize="22" FontAttributes="Bold" TextColor="White" />
+                        <Label Text="Visualizing how much you share in each reflection over time" FontSize="12" TextColor="{StaticResource Neutral400}" />
+                    </VerticalStackLayout>
                     <lvc:CartesianChart Series="{Binding WordTrendSeries}" 
                                        XAxes="{Binding XAxes}" 
                                        HeightRequest="350" />

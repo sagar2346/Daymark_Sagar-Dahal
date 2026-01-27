@@ -21,6 +21,9 @@ namespace DailyJournalApp.ViewModels
 
         [ObservableProperty]
         private ObservableCollection<ISeries> timePatternSeries = new();
+        
+        [ObservableProperty]
+        private ObservableCollection<ISeries> tagPopularitySeries = new();
 
         [ObservableProperty]
         private Axis[] xAxes = Array.Empty<Axis>();
@@ -33,6 +36,12 @@ namespace DailyJournalApp.ViewModels
 
         [ObservableProperty]
         private string peakJournalingTime = "Morning";
+        
+        [ObservableProperty]
+        private string insightSummary = "Start writing to see your patterns!";
+
+        [ObservableProperty]
+        private string mostUsedTagPhrase = "No tags used yet.";
 
         public AnalyticsViewModel(JournalService journalService)
         {
@@ -110,10 +119,44 @@ namespace DailyJournalApp.ViewModels
                     DataLabelsPosition = LiveChartsCore.Measure.DataLabelsPosition.Top
                 });
 
-                // 4. Stats
+                // 4. Tag Popularity (Bar)
+                var entryTags = await _journalService.GetAllEntryTagsAsync();
+                var tags = await _journalService.GetTagsAsync();
+                
+                var tagStats = entryTags.GroupBy(et => et.TagId)
+                                        .Select(g => new { 
+                                            Name = tags.FirstOrDefault(t => t.Id == g.Key)?.Name ?? "Unknown", 
+                                            Count = (double)g.Count() 
+                                        })
+                                        .OrderByDescending(x => x.Count)
+                                        .Take(5)
+                                        .ToList();
+
+                TagPopularitySeries.Clear();
+                TagPopularitySeries.Add(new ColumnSeries<double>
+                {
+                    Values = tagStats.Select(x => x.Count).ToArray(),
+                    Name = "Uses",
+                    Fill = new SolidColorPaint(SKColor.Parse("#10B981")), // Emerald
+                    Rx = 8, Ry = 8,
+                    DataLabelsPosition = LiveChartsCore.Measure.DataLabelsPosition.Top,
+                    DataLabelsPaint = new SolidColorPaint(SKColor.Parse("#94A3B8"))
+                });
+
+                // 5. Stats & Plain English Summaries
                 TotalWordsRecorded = wordCounts.Sum().ToString("N0");
                 AvgWordsPerEntry = wordCounts.Any() ? wordCounts.Average().ToString("F1") : "0";
-                PeakJournalingTime = timeGroups.OrderByDescending(x => x.Count).FirstOrDefault()?.Slot ?? "N/A";
+                
+                var topTime = timeGroups.OrderByDescending(x => x.Count).FirstOrDefault()?.Slot ?? "N/A";
+                PeakJournalingTime = topTime;
+
+                var topMood = moodCounts.OrderByDescending(x => x.Count).FirstOrDefault()?.Mood ?? "None";
+                InsightSummary = $"You've been feeling mostly **{topMood}** lately. You tend to write most during the **{topTime}**.";
+                
+                var topTag = tagStats.FirstOrDefault();
+                MostUsedTagPhrase = topTag != null 
+                    ? $"Your go-to topic is **#{topTag.Name}**, which you've mentioned {topTag.Count} times!"
+                    : "You haven't used many tags yet—try tagging your entries to see what matters most!";
 
             }
             catch (Exception ex)
