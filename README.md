@@ -51,5 +51,4 @@ The application is ready for the following test cases:
 - [x] Pagination performance
 - [x] Calculation of streaks and insights
 
-## 📄 License
-This project is for educational/coursework purposes. All rights reserved.
+
