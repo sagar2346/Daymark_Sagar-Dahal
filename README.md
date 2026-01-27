@@ -1,4 +1,4 @@
-# DailyJournalApp — Premium Personal Journaling System 📝
+# DayMark — Premium Personal Journaling System 📝
 
 A high-performance, secure, and feature-rich cross-platform journaling application built with **.NET MAUI** and **SQLite**. Designed for users who value privacy, rich-text expression, and data-driven personal growth.
 
